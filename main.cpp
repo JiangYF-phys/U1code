@@ -5,9 +5,9 @@
 using namespace std;
 using namespace chrono;
 
-using namespace Hubbard;
-using namespace Hubbard::squarelatt;
-using namespace square;
+using namespace Heisenberg;
+using namespace Heisenberg::trianglelatt;
+using namespace triangle;
 
 void readpara();
 void measure();
@@ -30,10 +30,13 @@ int main() {
         lastsweep=0;
     }
     
-    if (continueflag==1) {
+    if (continueflag==1 || continueflag==2) {
         nontrunc();
         if (constructflag==1) reconstruct();
         readwave();
+        
+        if (continueflag == 2) flipwave();
+
         if (lastsweep<=sweep) {
             iter_control(lastsweep);
             LtoR( beginid+1, ltot-truncpoint-1, false, true);
@@ -128,7 +131,7 @@ void readpara() {
 	vector<bond> latt = mylattice();
 
 	setbase(latt);
-	Jtarget = define_J(jtot);
+	Jtarget = define_J(0);
 	if (continueflag == 0) lastsweep = 0;
 	if (refpoint == 0) refpoint = int((lx + 1) * 3 / 4) - 1;
 

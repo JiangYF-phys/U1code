@@ -51,6 +51,36 @@ void wave::initial(const vector<repmap> &sys_map, const vector<repmap> &env_map,
     }
 }
 
+void wave::flipsyssite(const vector<repmap> &sys_map, const wave &myw) {
+    for (size_t wav_i = 0; wav_i < myw.size(); wav_i++) {
+        int old_sys_j=myw.getjl(wav_i);
+        int old_sys_n=myw.getnl(wav_i);
+        int partA[4], partB[4];
+        for (size_t wav_j = 0; wav_j < this->size(); wav_j++) {
+            if ( this->getjl(wav_j)==old_sys_j+2 && this->getnl(wav_j)==old_sys_n) {
+                for (size_t sys_i = 0; sys_i < sys_map.size(); sys_i++) {
+                    if ( sys_map[sys_i].j==old_sys_j && sys_map[sys_i].n==old_sys_n && sys_map[sys_i].j2==-1 ) {
+                        int loc=searchmap(sys_map, sys_map[sys_i].j1, 1, sys_map[sys_i].j1 + 1, sys_map[sys_i].n1, sys_map[sys_i].n2, sys_map[sys_i].n);
+                        if (loc>-1) {
+                            if (sys_map[sys_i].len==sys_map[loc].len && getsr(wav_j)==myw.getsr(wav_i)) {
+                                partA[0]=sys_map[loc].bgn; partA[1]=sys_map[loc].len;
+                                partA[2]=0; partA[3]=getsr(wav_j);
+
+                                partB[0]=sys_map[sys_i].bgn; partB[1]=sys_map[sys_i].len;
+                                partB[2]=0; partB[3]=myw.getsr(wav_i);
+                                this->setblockpart(wav_j, partA, myw.get(wav_i), partB, 0);
+                            } else {
+                                cout << "error: flip spin" << endl;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
 mul_store::mul_store(int mul_i, int mul_j, int mul_nl, int mul_nr, int mul_il, int mul_ir, int mul_jl, int mul_jr, double mul_9j, double mul_mat) {
     this->mul_i=mul_i; this->mul_j=mul_j;
     this->mul_nl=mul_nl; this->mul_nr=mul_nr;

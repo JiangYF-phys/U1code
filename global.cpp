@@ -1366,10 +1366,12 @@ void readother(ifstream& in, ofstream& out) {
 }
 
 Hamilton define_J(int myj) {
+	// we do not use this trick in U1 code
     vector<int> l(num_op,0);
     Hamilton myh(1,l,savetype);
     reducematrix h0(0,1);
-    mblock b(myj,myj,1,1,0,0);
+    // mblock b(myj,myj,1,1,0,0);
+	mblock b(0,0,1,1,0,0);
     // b.mat[0]= 0;
 	double *va=new double[1];
 	va[0]=0;

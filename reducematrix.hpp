@@ -59,6 +59,7 @@ public:
     void num_mul(double num, cudaStream_t stream);
     void mul_add(const double& alpha, const reducematrix& block, cudaStream_t stream);
     void mconjtoblock(int i, double num);
+    void setblockpart(int i, int partA[4], const mblock& block, int partB[4], cudaStream_t stream);
     void addsubblock(int loc, int bgn1, int bgn2, int len1, int len2, const mblock& part);
     void mult_subblock_subblock_rank(int loc, const double alpha, const mblock &block1, const double b2mat, const mblock &myw, const double b3mat, const mblock &block4, double* tmp_mat, const int bgn[4],const char flag[4],cudaStream_t stream);
     void todisk(ofstream& out, const char& flag) const;

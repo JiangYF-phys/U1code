@@ -17,5 +17,6 @@ void LtoR(const int &beg, const int &end, const bool &initial,const bool &contin
 void RtoL(const int &beg, const int &end, const bool &initial);
 void savewave();
 void readwave();
+void flipwave();
 
 #endif /* DMRG_hpp */

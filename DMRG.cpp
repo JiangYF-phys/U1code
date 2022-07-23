@@ -48,7 +48,8 @@ void warmup() {
         
         wave myw;
         
-		int jtot0=max(0,int(2*jtot*(1-(i+1)*2.0/ltot)));
+		// int jtot0=max(0,int(2*jtot*(1-(i+1)*2.0/ltot)));
+        int jtot0=int(jtot*(i+1)*2.0/ltot+0.001);
 		int ntot0=int(ntot*(i+1)*2.0/ltot+0.001);
 		if (adjustflag==1 && jtot0%2 != ntot0%2) {
 			cout << "jtot0=" << jtot0 << " and ntot0=" << ntot0 << " don't match, try increasing 2*J by 1" << endl;
@@ -123,6 +124,19 @@ void reconstruct() {
     }
 }
 
+void flipwave() {
+    vector<repmap> sysbasis, envbasis;
+    mapfromdisk(sysbasis, file+"sysmap"+to_string(beginid));
+    mapfromdisk(envbasis, file+"envmap"+to_string(ltot-beginid));
+    wave myw;
+    myw.initial(sysbasis, envbasis, jtot, ntot);
+    myw.flipsyssite(sysbasis, ground); 
+    double nor;
+    nor=myw.normalize(0);
+    ground=myw;
+    cout << "spin flipped at " << beginid << " point, norm:" << nor << endl;
+}
+
 void savesyshelp(const Hamilton &tot, const reducematrix &trun, const int &site) {
     if (site>0) {
         trun.todisk(file+"systrun"+to_string(site), 'n');
@@ -186,7 +200,7 @@ void LtoR(const int &beg, const int &end, const bool &initial, const bool &conti
             envbasis=jmap(site.Ham,env.Ham);
             if (initial) {
                 wave myw;
-                myw.initial(sysbasis, envbasis, 0, ntot);
+                myw.initial(sysbasis, envbasis, jtot, ntot);
                 myw.setran();
                 ground=myw;
             }
@@ -197,7 +211,7 @@ void LtoR(const int &beg, const int &end, const bool &initial, const bool &conti
             envtrun.fromdisk(file+"envtrun"+to_string(ltot-i-1), 'n', 0);
             vector<repmap> envbs;
             mapfromdisk(envbs, file+"envmap"+to_string(ltot-i));
-            myw.initial(sysbasis, envbasis, 0, ntot);
+            myw.initial(sysbasis, envbasis, jtot, ntot);
             myw.transLtoR(ground, systrun, envtrun, sysbasis, envbs);
             ground=myw;
         }
@@ -343,7 +357,7 @@ void RtoL(const int &beg, const int &end, const bool &initial) {
             sysbasis=jmap(sys.Ham,site.Ham);
             if (initial) {
                 wave myw;
-                myw.initial(sysbasis, envbasis, 0, ntot);
+                myw.initial(sysbasis, envbasis, jtot, ntot);
                 myw.setran();
                 ground=myw;
             }
@@ -354,7 +368,7 @@ void RtoL(const int &beg, const int &end, const bool &initial) {
             systrun.fromdisk(file+"systrun"+to_string(ltot-i-1), 'n', 0);
             vector<repmap> sysbs;
             mapfromdisk(sysbs, file+"sysmap"+to_string(ltot-i));
-            myw.initial(sysbasis, envbasis, 0, ntot);
+            myw.initial(sysbasis, envbasis, jtot, ntot);
             myw.transRtoL(ground, systrun, envtrun, sysbs, envbasis);
             ground=myw;
         }

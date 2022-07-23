@@ -169,6 +169,13 @@ void reducematrix::addsubblock(int loc, int bgn1, int bgn2,int len1, int len2, c
     // cudaDeviceSynchronize();
 }
 
+void reducematrix::setblockpart(int i, int partA[4], const mblock& wave, int partB[4], cudaStream_t stream) {
+    dim3 block(32, 32);
+    dim3 grid((partA[1]-1)/block.x+1, (partA[3]-1)/block.y+1);
+    // check
+    matcopypart<<<grid,block,0,stream>>>(1.0, this->mat[i]->mat, this->mat[i]->sleft, partA[0], wave.mat, wave.sleft, partB[0], partA[1], partA[3]);
+}
+
 void reducematrix::mult_subblock_subblock_rank(int loc, const double alpha, const mblock &block1, const double b2mat, const mblock &wave, const double b3mat, const mblock &block4, double* tmp_mat, const int bgn[4],const char flag[4], cudaStream_t stream) {
     assert(fabs(alpha)>0);
     // env part has an additonal transpose
