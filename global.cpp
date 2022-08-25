@@ -18,6 +18,7 @@ int lanczos_ver, adjustflag;
 vector<int> twopoint;
 vector<vector<bond>> fourpoint;
 vector<double> def_int, icoef, train;
+vector<Hamilton> train_site;
 vector<char> optype, savetype;
 // reducematrix *sys_trun, *env_trun;
 
@@ -65,7 +66,7 @@ namespace spinless {
 		h0.add(a);
 		
 		mblock b(0,0,1,1,1,1);
-		va[0]=0;//-mmu;
+		va[0]=mmu;
 		cudaMemcpy(b.mat, va, sizeof(double), cudaMemcpyHostToDevice); 
 		h0.add(b);
 

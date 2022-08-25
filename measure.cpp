@@ -31,7 +31,7 @@ namespace tJmodel {
 
 namespace Heisenberg {
     void measurehelp(cudaStream_t stream[2]) {
-        measuresite(s_z, "out/n.dat", stream);
+        measuresite(s_z, "out/Sz.dat", stream);
         measurecorr(s_z, s_z, 1.0, "out/SzCor.dat", stream);
     }
 }

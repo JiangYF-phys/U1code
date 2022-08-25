@@ -5,9 +5,9 @@
 using namespace std;
 using namespace chrono;
 
-using namespace Heisenberg;
-using namespace Heisenberg::trianglelatt;
-using namespace triangle;
+using namespace spinless;
+using namespace spinless::armchairlatt;
+using namespace armchair;
 
 void readpara();
 void measure();
@@ -138,12 +138,13 @@ void readpara() {
 	train.clear();
 	for (int i = 0; i < ltot+1; i++) { train.push_back(0);}
 	if (trainflag == 1) {
-		for (int i = 0; i < lx; ++i) {
-			for (int j = 0; j < ly; j++) {
-				train[tolat(i, j)+1]=0.*cos((i+0.5)*2*3.141592654/6);
-			}
-		}
+        for (int j = 0; j < ly; j++) {
+            train[tolat(0, j)+1]=V_1*ntot/ltot;
+            train[tolat(lx-1, j)+1]=V_1*ntot/ltot;
+        }	
 	}
+    train_site.clear();
+    for (int i = 0; i < ltot+1; i++) { train_site.push_back(define_site(train[i]) );}
 }
 
 void measure() {

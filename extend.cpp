@@ -15,13 +15,11 @@ Hamilton addonesite(const Hamilton &block, vector<repmap> &basis, char sore) {
 	Hamilton newblock(block.len()+1,ls, block.stype);
     
     if (sore=='s') {
-		// Hamilton msit=define_site(train[block.len()+1]);
-        newblock.Ham.prod_id(block.Ham, site.Ham, basis, 1.0, 'r', 0);
-        newblock.Ham.prod_id(block.Ham, site.Ham, basis, 1.0, 'l', 0);
+        newblock.Ham.prod_id(block.Ham, train_site[block.len()+1].Ham, basis, 1.0, 'r', 0);
+        newblock.Ham.prod_id(block.Ham, train_site[block.len()+1].Ham, basis, 1.0, 'l', 0);
     }   else {
-		// Hamilton msit=define_site(train[ltot-block.len()]);
-        newblock.Ham.prod_id(site.Ham, block.Ham, basis, 1.0, 'r', 0);
-        newblock.Ham.prod_id(site.Ham, block.Ham, basis, 1.0, 'l', 0);
+        newblock.Ham.prod_id(train_site[ltot-block.len()].Ham, block.Ham, basis, 1.0, 'r', 0);
+        newblock.Ham.prod_id(train_site[ltot-block.len()].Ham, block.Ham, basis, 1.0, 'l', 0);
     }
     
     // update operators
@@ -106,13 +104,11 @@ void addonesite_replace(Hamilton &block, vector<repmap> &basis, const reducematr
 	Hamilton newblock(block.len()+1,ls,block.stype);
     
     if (sore=='s') {
-		// Hamilton msit=define_site(train[block.len()+1]);
-        newblock.Ham.prod_id(block.Ham, site.Ham, basis, 1.0, 'r', 0);
-        newblock.Ham.prod_id(block.Ham, site.Ham, basis, 1.0, 'l', 0);
+        newblock.Ham.prod_id(block.Ham, train_site[block.len()+1].Ham, basis, 1.0, 'r', 0);
+        newblock.Ham.prod_id(block.Ham, train_site[block.len()+1].Ham, basis, 1.0, 'l', 0);
     }   else {
-		// Hamilton msit=define_site(train[ltot-block.len()]);
-        newblock.Ham.prod_id(site.Ham, block.Ham, basis, 1.0, 'r', 0);
-        newblock.Ham.prod_id(site.Ham, block.Ham, basis, 1.0, 'l', 0);
+        newblock.Ham.prod_id(train_site[ltot-block.len()].Ham, block.Ham, basis, 1.0, 'r', 0);
+        newblock.Ham.prod_id(train_site[ltot-block.len()].Ham, block.Ham, basis, 1.0, 'l', 0);
     }
     
     // update Hamiltonian
@@ -408,12 +404,12 @@ void Htowave(const Hamilton &sys, const wave &trail, wave &newwave, const Hamilt
         }
     }
 
-    Hamilton msit;
+    HamiltonCPU msitCPU;
     newwave.mul(sys.Ham, siteCPU.Ham, trail, siteCPU.Ham, env.Ham, 1.0, "niii", sys_basis, env_basis, stream);
-    // msit=define_site(train[sys.len()+1]);
-    newwave.mul(sys.Ham, siteCPU.Ham, trail, siteCPU.Ham, env.Ham, 1.0, "inii", sys_basis, env_basis, stream);
-	// msit=define_site(train[ltot-env.len()]);
-    newwave.mul(sys.Ham, siteCPU.Ham, trail, siteCPU.Ham, env.Ham, 1.0, "iini", sys_basis, env_basis, stream);
+    train_site[sys.len()+1].toCPU(msitCPU);
+    newwave.mul(sys.Ham, msitCPU.Ham, trail, siteCPU.Ham, env.Ham, 1.0, "inii", sys_basis, env_basis, stream);
+    train_site[ltot-env.len()].toCPU(msitCPU);
+    newwave.mul(sys.Ham, siteCPU.Ham, trail, msitCPU.Ham, env.Ham, 1.0, "iini", sys_basis, env_basis, stream);
     newwave.mul(sys.Ham, siteCPU.Ham, trail, siteCPU.Ham, env.Ham, 1.0, "iiin", sys_basis, env_basis, stream);
     // cout << newwave << endl;
 
@@ -631,7 +627,7 @@ void HtowaveCtoG(const Hamilton &sys, const wave_CPU &trail, wave &newwave, cons
         }
     }
 
-    Hamilton msit;
+    // Hamilton msit;
     mul_CtoG(sys.Ham, siteCPU.Ham, trail, newwave, siteCPU.Ham, env.Ham, 1.0, "niii", sys_basis, env_basis, stream);
     // msit=define_site(train[sys.len()+1]);
     mul_CtoG(sys.Ham, siteCPU.Ham, trail, newwave, siteCPU.Ham, env.Ham, 1.0, "inii", sys_basis, env_basis, stream);

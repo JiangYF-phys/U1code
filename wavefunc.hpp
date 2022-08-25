@@ -61,6 +61,7 @@ class wave_CPU {
     void copyval(int loc, const mblock &myw, cudaStream_t stream);
     mblock toGPU(int i, cudaStream_t stream) const;
     double dot(const wave &myw, cudaStream_t stream) const;
+    double dot(const wave_CPU &myw) const;
     double normalize();
     int search(const int &jleft, const int &jright, const int &nleft, const int &nright) const;
     void mul_help(const reducematrix &block1, const reducematrixCPU &block2, const mblock &myw, const reducematrixCPU &block3, const reducematrix &block4, const double &para, const char flag[4], double* tmp_mat, const vector<repmap> &mapl, const vector<repmap> &mapr, const vector<mul_store> &sys_store, const vector<mul_store> &env_store, cudaStream_t stream);

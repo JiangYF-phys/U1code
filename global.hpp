@@ -10,7 +10,7 @@
 
 using namespace std;
 
-const int Lan_max_inner=7;
+const int Lan_max_inner=6;
 const int Lan_max_outter=24;
 
 struct bond;
@@ -21,6 +21,7 @@ reducematrix define_fc();
 Hamilton define_J(int myj);
 
 extern vector<double> def_int, icoef, train;
+extern vector<Hamilton> train_site;
 extern vector<fourblock> *mybase;
 extern Hamilton site, Jtarget;
 extern HamiltonCPU siteCPU;
@@ -30,7 +31,7 @@ extern reducematrixCPU fn_CPU, sz_CPU;
 // extern reducematrix *sys_trun, *env_trun;
 
 extern int num_op;
-extern double j_1, j_2, j_3, hop, hopp, hubU, lan_error, trun_error, lan_error_0, trun_error_0;
+extern double j_1, j_2, j_3, hop, hopp, hubU, V_1, V_2, lan_error, trun_error, lan_error_0, trun_error_0;
 extern int lx, ly, ltot, ntot, jtot, sweep, lastsweep, kept_min, kept_max, truncpoint;
 extern int middleid, beginid, stopid, continueflag, measureflag, trainflag, constructflag, refpoint, bshift;
 extern int lanczos_ver, adjustflag;

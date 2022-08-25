@@ -569,6 +569,12 @@ double wave_CPU::dot(const wave &wav, cudaStream_t stream) const {
     return inner;
 }
 
+double wave_CPU::dot(const wave_CPU &wav) const {
+    double inner=0;
+    inner=cblas_ddot(tot_size, val, 1, wav.val, 1);
+    return inner;
+}
+
 double wave_CPU::normalize() {
     double nor;
     nor=cblas_ddot(tot_size, val, 1, val, 1);

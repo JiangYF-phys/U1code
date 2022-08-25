@@ -117,7 +117,7 @@ void lanc_main_new(const Hamilton &sys, wave &lastwave, const Hamilton &env, con
         int inner=1;
         cout << "inner iter: ";
         wave_CPU* wave_store = new wave_CPU[Lan_max_inner+1]();
-        while ( inner < min(upperbound, Lan_max_inner) && err>lan_error ) {
+        while ( inner<4 || (inner < min(upperbound, Lan_max_inner) && err>lan_error) ) {
             cout << inner;
         
             auto start2 = high_resolution_clock::now();
@@ -166,11 +166,20 @@ void lanc_main_new(const Hamilton &sys, wave &lastwave, const Hamilton &env, con
             icount++;
         }
         
+        cout << "check orthogonal:";
+        for (size_t i=1; i<inner-1; ++i) {
+            cout << "  " << wave_store[0].dot(wave_store[i]);
+        }
+        cout << endl;
 
+        cout << "check vector:  " << vec[0];
         wave_store[0].mul_num(vec[0]);
         for (size_t i=1; i<inner-1; ++i) {
             wave_store[0].mul_add(vec[i], wave_store[i]);
+            cout << "  " << vec[i];
         }
+        cout << endl;
+
         wave_store[0].toGPU(lastwave, stream[0]);
         
         double nor;
