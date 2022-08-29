@@ -10,7 +10,7 @@
 
 using namespace std;
 
-const int Lan_max_inner=6;
+const int Lan_max_inner=7;
 const int Lan_max_outter=24;
 
 struct bond;

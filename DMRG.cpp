@@ -3,6 +3,31 @@
 
 extern wave ground;
 
+double physical_memory_used_by_process() {
+    FILE* file = fopen("/proc/self/status", "r");
+    int result = -1;
+    char line[128];
+
+    while (fgets(line, 128, file) != nullptr) {
+        if (strncmp(line, "VmRSS:", 6) == 0) {
+            int len = strlen(line);
+
+            const char* p = line;
+            for (; std::isdigit(*p) == false; ++p) {}
+
+            line[len - 3] = 0;
+            result = atoi(p);
+
+            break;
+        }
+    }
+
+    fclose(file);
+
+    return result/1024.0/1024.0;
+}
+
+
 void nontrunc() {
     makeJsite().optodisk(file+"sysbl"+to_string(1));
     site.optodisk(file+"envbl"+to_string(1));
@@ -101,9 +126,9 @@ void warmup() {
 }
 
 void reconstruct() {
-    
+    cout << "CPUmem_0="<< physical_memory_used_by_process() << "GB" << endl;
     nontrunc();
-    
+    cout << "CPUmem_1="<< physical_memory_used_by_process() << "GB" << endl;
     for (int i=truncpoint; i<beginid; ++i) {
         Hamilton sys(file+"sysbl"+to_string(i));
         vector<repmap> sysbasis=jmap(sys.Ham,site.Ham);
@@ -122,6 +147,7 @@ void reconstruct() {
         addonesite_replace(env, envbasis, trunc, 'e');
 		env.optodisk(file+"envbl"+to_string(i+1));
     }
+    cout << "CPUmem_2="<< physical_memory_used_by_process() << "GB" << endl;
 }
 
 void flipwave() {
@@ -164,8 +190,10 @@ void LtoR(const int &beg, const int &end, const bool &initial, const bool &conti
     for (size_t j = 0; j < 2; j++) {
         cudaStreamCreate(&stream[j]);
     }
+    cout << "CPUmem_0="<< physical_memory_used_by_process() << "GB" << endl;
     Hamilton sys(file+"sysbl"+to_string(beg-1));
     HamiltonCPU env_pre(file+"envbl"+to_string(ltot-beg-1));
+    cout << "CPUmem_1="<< physical_memory_used_by_process() << "GB" << endl;
     Hamilton env;
     reducematrix systrun;
     if (continu) systrun.fromdisk(file+"systrun"+to_string(beg-1), 'n', 0);
@@ -179,7 +207,9 @@ void LtoR(const int &beg, const int &end, const bool &initial, const bool &conti
             out.close();
         }
         env.fromC(env_pre);
+        cout << "CPUmem_a="<< physical_memory_used_by_process() << "GB" << endl;
         env_pre.clear();
+        cout << "CPUmem_b="<< physical_memory_used_by_process() << "GB" << endl;
 
         auto stop = high_resolution_clock::now();
         auto duration = duration_cast<milliseconds>(stop - start);
@@ -187,15 +217,20 @@ void LtoR(const int &beg, const int &end, const bool &initial, const bool &conti
         start = high_resolution_clock::now();
 
         int site_e=0;
-        if (i<end-1) {site_e=ltot-i-1-2;}
-        thread th0(readenvhelp, ref(env_pre), ref(site_e) );
+        if (i<end-1) {
+            site_e=ltot-i-1-2;
+            // improve: allocate than read, parallel read
+            env_pre.fromdisk(file+"envbl"+to_string(site_e));
+        }
+        // thread th0(readenvhelp, ref(env_pre), ref(site_e) );
+        
         int site_s=0;
         if (i>beg-1) {site_s=i;}
         thread th1(savesyshelp, ref(sys), ref(systrun), ref(site_s) );
 
         vector<repmap> sysbasis, envbasis;
         sysbasis=jmap(sys.Ham,site.Ham);
-        
+
         if (i==beg-1 && !continu) {
             envbasis=jmap(site.Ham,env.Ham);
             if (initial) {
@@ -225,6 +260,8 @@ void LtoR(const int &beg, const int &end, const bool &initial, const bool &conti
         ground.normalize(0);
         cublasSetStream(GlobalHandle, stream[0]);
 
+        cout << endl << "CPUmem_0="<< physical_memory_used_by_process() << "GB";
+
         wave_CPU wave_store[2];
 
         if (lanczos_ver==1) {
@@ -235,6 +272,8 @@ void LtoR(const int &beg, const int &end, const bool &initial, const bool &conti
             lanc_main_V3(sys, ground, env, sysbasis, envbasis, wave_store, stream);
             wave_store[1].clear();
         }
+
+        cout << "CPUmem_1="<< physical_memory_used_by_process() << "GB" << endl;
         // wave_CPU wave_store[4];
         // for (size_t j = 0; j < 4; j++) {wave_store[j].construct(ground);}
         // lanc_main_V4(sys, ground, env, sysbasis, envbasis, wave_store, stream);
@@ -277,12 +316,14 @@ void LtoR(const int &beg, const int &end, const bool &initial, const bool &conti
         time_4+=duration.count()/1000.0;
 
         start = high_resolution_clock::now();
-        th0.join();
+        // th0.join();
         cout << ", env memCPU=" << env_pre.mem_size()/1024 << "GB";
 
         stop = high_resolution_clock::now();
         duration = duration_cast<milliseconds>(stop - start);
         cout << ", res time=" << duration.count() << "ms" << endl;
+
+        cout << "CPUmem_2="<< physical_memory_used_by_process() << "GB" << endl;
     }
     
     systrun.todisk(file+"systrun"+to_string(end), 'n');
@@ -344,8 +385,11 @@ void RtoL(const int &beg, const int &end, const bool &initial) {
         start = high_resolution_clock::now();
 
         int site_s=0;
-        if (i<ltot-end-1) {site_s=ltot-i-1-2;}
-        thread th0(readsyshelp, ref(sys_pre), ref(site_s) );
+        if (i<ltot-end-1) {
+            site_s=ltot-i-1-2;
+            sys_pre.fromdisk(file+"sysbl"+to_string(site_s));
+        }
+        // thread th0(readsyshelp, ref(sys_pre), ref(site_s) );
         int site_e=0;
         if (i>ltot-beg-1) {site_e=i;}
         thread th1(saveenvhelp, ref(env), ref(envtrun), ref(site_e) );
@@ -447,7 +491,7 @@ void RtoL(const int &beg, const int &end, const bool &initial) {
         time_4+=duration.count()/1000.0;
 
         start = high_resolution_clock::now();
-        th0.join();
+        // th0.join();
         cout << ", sys memCPU=" << sys_pre.mem_size()/1024 << "GB";
 
         stop = high_resolution_clock::now();
