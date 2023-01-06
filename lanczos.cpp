@@ -127,6 +127,7 @@ void lanc_main_new(const Hamilton &sys, wave &lastwave, const Hamilton &env, con
             time2+=duration2.count();
             Htowave(sys, myv[inner%2], lastwave, env, sys_basis, env_basis, stream[0]);
             alpha.push_back( lastwave.dot(myv[inner%2]) ); // a(i)
+            // std::cout << alpha[inner] << std::endl;
             if (inner>1) {
                 double* diag = new double[inner]();
                 double* ndiag= new double[inner]();
@@ -200,6 +201,7 @@ void lanc_main_new(const Hamilton &sys, wave &lastwave, const Hamilton &env, con
         wave_store[0].clear();
         delete [] wave_store; wave_store=NULL;
         iout++;
+        cout << "GPUmem="<< GPU_memory_used_by_process() << "GB" << endl;
     }
     
     cublasSetStream(GlobalHandle, 0);

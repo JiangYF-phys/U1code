@@ -463,12 +463,12 @@ ostream& operator<<(ostream& out, const mblock &block) {
 	double* mymat = new double[block.sleft*block.sright];
     cublasGetMatrix(block.sleft, block.sright, sizeof(*(block.mat)), block.mat, block.sleft, mymat, block.sleft);
     for (int i = 0; i < block.sleft; ++i) {
-		for (int j = 0; j < 1; j++) {
+		for (int j = 0; j < block.sright; j++) {
 			cout << mymat[i+j*block.sleft] << " ";
 		}
-		// cout << endl;
+		cout << endl;
 	}
-    cout << endl;
+    // cout << endl;
     delete [] mymat;
     return out;
 }
@@ -548,13 +548,13 @@ void mblockCPU::mconj(const double alpha){
 ostream& operator<<(ostream& out, const mblockCPU &block) {
     out << endl;
     cout << "L: {j=" << block.jleft << ",n=" << block.nleft << ",l=" << block.sleft << "}, R: {j=" << block.jright << ",n=" << block.nright << ",l=" << block.sright << "}" << endl;
-    cout << block.mat[0] << " ";
-    cout << block.mat[block.sleft*block.sright-1] << " ";
-    // for (int i = 0; i < block.sleft; ++i) {
-	// 	for (int j = 0; j < block.sright; j++) {
-	// 		cout << block.mat[i+j*block.sleft] << " ";
-	// 	}
-	// 	cout << endl;
-	// }
+    // cout << block.mat[0] << " ";
+    // cout << block.mat[block.sleft*block.sright-1] << " ";
+    for (int i = 0; i < block.sleft; ++i) {
+		for (int j = 0; j < block.sright; j++) {
+			cout << block.mat[i+j*block.sleft] << " ";
+		}
+		cout << endl;
+	}
     return out;
 }

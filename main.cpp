@@ -39,8 +39,8 @@ int main() {
 
         if (lastsweep<=sweep) {
             iter_control(lastsweep);
-            LtoR( beginid+1, ltot-truncpoint-1, false, true);
-            RtoL( ltot-truncpoint-1, truncpoint+1, false);
+            LtoR( beginid+1, ltot-sweepend-1, false, true);
+            RtoL( ltot-sweepend-1, sweepend+1, false);
         } else if (beginid < stopid) {
             iter_control(lastsweep);
             LtoR( beginid+1, stopid, false, true);
@@ -61,8 +61,8 @@ int main() {
             out.close();
         }
         iter_control(i);
-        LtoR( truncpoint+1, ltot-truncpoint-1, false, false);
-        RtoL( ltot-truncpoint-1, truncpoint+1, false);
+        LtoR( sweepend+1, ltot-sweepend-1, false, false);
+        RtoL( ltot-sweepend-1, sweepend+1, false);
     }
     
     if (lastsweep<=sweep) {
@@ -73,7 +73,7 @@ int main() {
             out.close();
         }
         iter_control(sweep);
-        LtoR( truncpoint+1, stopid, false, false);
+        LtoR( sweepend+1, stopid, false, false);
     }
     
     out.open("out/info", ios::out | ios::app);
@@ -138,10 +138,15 @@ void readpara() {
 	train.clear();
 	for (int i = 0; i < ltot+1; i++) { train.push_back(0);}
 	if (trainflag == 1) {
-        for (int j = 0; j < ly; j++) {
-            train[tolat(0, j)+1]=V_1*ntot/ltot;
-            train[tolat(lx-1, j)+1]=V_1*ntot/ltot;
-        }	
+        // for (int j = 0; j < ly; j++) {
+        //     train[tolat(0, j)+1]=V_1*ntot/ltot;
+        //     train[tolat(lx-1, j)+1]=V_1*ntot/ltot;
+        // }
+        for (int i = 0; i < lx/3; i++) {
+            for (int j = 0; j < ly; j++) {
+                train[tolat(3*i+1, j)+1]= - 0.5;
+            }
+        }
 	}
     train_site.clear();
     for (int i = 0; i < ltot+1; i++) { train_site.push_back(define_site(train[i]) );}

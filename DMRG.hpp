@@ -9,8 +9,6 @@
 #include "lanczos.hpp"
 #include "truncation.hpp"
 
-double physical_memory_used_by_process();
-
 void nontrunc();
 void warmup();
 void reconstruct();

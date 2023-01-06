@@ -1,8 +1,7 @@
 #!/bin/bash
 
 # job name
-#SBATCH -x g0001
-#SBATCH --job-name=x36y6d9Utest
+#SBATCH --job-name=test
 # output file
 #SBATCH --output=status.%J.out
 # error file
@@ -10,19 +9,15 @@
 
 
 ulimit -s unlimited
-module load cuda/11.4 intel/mkl/2019
 
 echo BEGIN TIME: $(date +"%F %T")
 #echo ${SLURM_SUBMIT_DIR}
 #cd ${SLURM_SUBMIT_DIR}
 cp temp/* back/
-#cp back/* temp/
 
-OMP_NUM_THREADS=10
+export OMP_NUM_THREADS=9
 
-srun -n 1 dmrg
-#nvprof --unified-memory-profiling off --log-file log ./dmrg 
-#cuda-memcheck ./dmrg
+yhrun -N 1 -p gpu --gpus-per-node=1 --cpus-per-gpu=9 dmrg
 
 rm temp/*bl*
 

@@ -12,7 +12,7 @@ reducematrixCPU fn_CPU, sz_CPU;
 int num_op;
 
 double j_1, j_2, j_3, hop, hopp, hubU, V_1, V_2, lan_error, trun_error, lan_error_0, trun_error_0;
-int lx, ly, ntot, jtot, sweep, lastsweep, kept_min, kept_max, truncpoint, ltot, middleid, stopid, beginid, refpoint;
+int lx, ly, ntot, jtot, sweep, lastsweep, kept_min, kept_max, truncpoint, sweepend, ltot, middleid, stopid, beginid, refpoint;
 int continueflag, measureflag, trainflag, constructflag, bshift;
 int lanczos_ver, adjustflag;
 vector<int> twopoint;
@@ -48,7 +48,7 @@ namespace spinless {
 	}
 
 	Hamilton define_site(double mmu) {
-		num_op=3;
+		num_op=2;
 		adjustflag=0;
 		optype.resize(num_op); savetype.resize(num_op);
 		def_int.resize(num_op); icoef.resize(num_op);
@@ -1238,7 +1238,7 @@ namespace armchair {
 	vector<int> settwopoint(int y) {
 		vector<int> mysites;
 		mysites.clear();
-		for (int i = 0; i <= lx/2+1; ++i) {
+		for (int i = 0; i <= 3*lx/4+1; ++i) {
 			mysites.push_back(tolat(refpoint+i, y));
 		}
 		return mysites;
@@ -1262,7 +1262,7 @@ namespace armchair {
 		loc2 = tolat(refpoint, y+1);
 		tmp.def(amp, icoef, loc1, loc2);
 		mysites.push_back(tmp);
-		for (int i = 1; i < lx/4+1; ++i) {
+		for (int i = 1; tolat(refpoint+2*i+1, y+1) < stopid; ++i) {
 			loc1 = tolat(refpoint+2*i, y);
 			loc2 = tolat(refpoint+2*i, y+1);
 			tmp.def(amp, icoef, loc1, loc2);
@@ -1276,7 +1276,7 @@ namespace armchair {
 		loc2 = tolat(refpoint+1, y);
 		tmp.def(amp, icoef, loc1, loc2);
 		mysites.push_back(tmp);
-		for (int i = 1; i < lx/4+1; ++i) {
+		for (int i = 1; tolat(refpoint+2*i+1, y+1) < stopid; ++i) {
 			loc1 = tolat(refpoint+2*i, y);
 			loc2 = tolat(refpoint+2*i+1, y);
 			tmp.def(amp, icoef, loc1, loc2);
@@ -1290,7 +1290,7 @@ namespace armchair {
 		loc2 = tolat(refpoint-1, y);
 		tmp.def(amp, icoef, loc1, loc2);
 		mysites.push_back(tmp);
-		for (int i = 1; i < lx/4+1; ++i) {
+		for (int i = 1; tolat(refpoint+2*i+1, y+1) < stopid; ++i) {
 			loc1 = tolat(refpoint+2*i, y);
 			loc2 = tolat(refpoint+2*i-1, y);
 			tmp.def(amp, icoef, loc1, loc2);
@@ -1304,7 +1304,7 @@ namespace armchair {
 		loc2 = tolat(refpoint, y+1);
 		tmp.def(amp, icoef, loc1, loc2);
 		mysites.push_back(tmp);
-		for (int i = 1; i < lx/4+1; ++i) {
+		for (int i = 1; tolat(refpoint+2*i+1, y+1) < stopid; ++i) {
 			loc1 = tolat(refpoint+2*i, y);
 			loc2 = tolat(refpoint+2*i+1, y);
 			tmp.def(amp, icoef, loc1, loc2);
@@ -1318,7 +1318,7 @@ namespace armchair {
 		loc2 = tolat(refpoint, y+1);
 		tmp.def(amp, icoef, loc1, loc2);
 		mysites.push_back(tmp);
-		for (int i = 1; i < lx/4+1; ++i) {
+		for (int i = 1; tolat(refpoint+2*i+1, y+1) < stopid; ++i) {
 			loc1 = tolat(refpoint+2*i, y);
 			loc2 = tolat(refpoint+2*i-1, y);
 			tmp.def(amp, icoef, loc1, loc2);
@@ -1332,7 +1332,7 @@ namespace armchair {
 		loc2 = tolat(refpoint+1, y);
 		tmp.def(amp, icoef, loc1, loc2);
 		mysites.push_back(tmp);
-		for (int i = 1; i < lx/4+1; ++i) {
+		for (int i = 1; tolat(refpoint+2*i+1, y+1) < stopid; ++i) {
 			loc1 = tolat(refpoint+2*i, y);
 			loc2 = tolat(refpoint+2*i-1, y);
 			tmp.def(amp, icoef, loc1, loc2);
@@ -1340,7 +1340,36 @@ namespace armchair {
 		}
 		allsets.push_back(mysites);
 		out << allsets.size() << ": YX" << endl;
+
+		mysites.clear();
+		loc1 = tolat(refpoint, y);
+		loc2 = tolat(refpoint, y+1);
+		tmp.def(amp, icoef, loc1, loc2);
+		mysites.push_back(tmp);
+		for (int i = 1; tolat(refpoint+2*i+1, y+1) < stopid; ++i) {
+			loc1 = tolat(refpoint+2*i-1, y+1);
+			loc2 = tolat(refpoint+2*i-1, y+2);
+			tmp.def(amp, icoef, loc1, loc2);
+			mysites.push_back(tmp);
+		}
+		allsets.push_back(mysites);
+		out << allsets.size() << ": Z1" << endl;
+
+		mysites.clear();
+		loc1 = tolat(refpoint, y);
+		loc2 = tolat(refpoint, y+1);
+		tmp.def(amp, icoef, loc1, loc2);
+		mysites.push_back(tmp);
+		for (int i = 1; tolat(refpoint+2*i+1, y+1) < stopid; ++i) {
+			loc1 = tolat(refpoint+2*i, y+2);
+			loc2 = tolat(refpoint+2*i, y+3);
+			tmp.def(amp, icoef, loc1, loc2);
+			mysites.push_back(tmp);
+		}
+		allsets.push_back(mysites);
+		out << allsets.size() << ": Z2" << endl;
 		out.close();
+
 		return allsets;
 	}
 }
@@ -1349,6 +1378,7 @@ void readother(ifstream& in, ofstream& out) {
 	infoio(in, out, kept_min);
 	infoio(in, out, kept_max);
 	infoio(in, out, truncpoint);
+	infoio(in, out, sweepend);
 	infoio(in, out, lan_error_0);
 	infoio(in, out, trun_error_0);
 	infoio(in, out, sweep);
@@ -1439,4 +1469,37 @@ void iter_control(int nth) {
         out.close();
     }
     cout << "trunc_err_0 = " << trun_error << ", lancz_err_0 = " << lan_error << endl;
+}
+
+
+double physical_memory_used_by_process() {
+    FILE* file = fopen("/proc/self/status", "r");
+    int result = -1;
+    char line[128];
+
+    while (fgets(line, 128, file) != nullptr) {
+        if (strncmp(line, "VmRSS:", 6) == 0) {
+            int len = strlen(line);
+
+            const char* p = line;
+            for (; std::isdigit(*p) == false; ++p) {}
+
+            line[len - 3] = 0;
+            result = atoi(p);
+
+            break;
+        }
+    }
+
+    fclose(file);
+
+    return result/1024.0/1024.0;
+}
+
+double GPU_memory_used_by_process() {
+    size_t free_b;
+    size_t total_b;
+    cudaMemGetInfo(&free_b,&total_b);
+    double used_b=(double)total_b-(double)free_b;
+    return used_b/1024.0/1024.0/1024.0;
 }

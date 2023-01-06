@@ -17,6 +17,7 @@ Hamilton addonesite(const Hamilton &block, vector<repmap> &basis, char sore) {
     if (sore=='s') {
         newblock.Ham.prod_id(block.Ham, train_site[block.len()+1].Ham, basis, 1.0, 'r', 0);
         newblock.Ham.prod_id(block.Ham, train_site[block.len()+1].Ham, basis, 1.0, 'l', 0);
+        // std::cout << newblock.Ham << std::endl;
     }   else {
         newblock.Ham.prod_id(train_site[ltot-block.len()].Ham, block.Ham, basis, 1.0, 'r', 0);
         newblock.Ham.prod_id(train_site[ltot-block.len()].Ham, block.Ham, basis, 1.0, 'l', 0);
@@ -33,6 +34,7 @@ Hamilton addonesite(const Hamilton &block, vector<repmap> &basis, char sore) {
                     int loc=distance(mybase[seq][block.len()].sys_idx.begin(), iter);
                     newblock.op[seq][i].prod_id(block.op[seq][loc], site.Ham, basis, 1.0, 'r', 0);
                 }
+                // std::cout << newblock.op[seq][i] << std::endl;
             }
         }
     } else {

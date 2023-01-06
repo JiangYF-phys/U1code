@@ -3,31 +3,6 @@
 
 extern wave ground;
 
-double physical_memory_used_by_process() {
-    FILE* file = fopen("/proc/self/status", "r");
-    int result = -1;
-    char line[128];
-
-    while (fgets(line, 128, file) != nullptr) {
-        if (strncmp(line, "VmRSS:", 6) == 0) {
-            int len = strlen(line);
-
-            const char* p = line;
-            for (; std::isdigit(*p) == false; ++p) {}
-
-            line[len - 3] = 0;
-            result = atoi(p);
-
-            break;
-        }
-    }
-
-    fclose(file);
-
-    return result/1024.0/1024.0;
-}
-
-
 void nontrunc() {
     makeJsite().optodisk(file+"sysbl"+to_string(1));
     site.optodisk(file+"envbl"+to_string(1));
@@ -43,6 +18,7 @@ void nontrunc() {
         sys.optodisk(file+"sysbl"+to_string(i+1));
         env=addonesite(env, envbasis, 'e');
         env.optodisk(file+"envbl"+to_string(i+1));
+        // cout << sys.Ham << endl;
     }
 }
 
@@ -137,6 +113,7 @@ void reconstruct() {
         trunc.fromdisk(file+"systrun"+to_string(i+1), 'n', 0);
         addonesite_replace(sys, sysbasis, trunc, 's');
 		sys.optodisk(file+"sysbl"+to_string(i+1));
+        // std::cout << sys.Ham << std::endl;
     }
     for (int i=truncpoint; i<ltot-beginid-2; ++i) {
         Hamilton env(file+"envbl"+to_string(i));
@@ -285,10 +262,11 @@ void LtoR(const int &beg, const int &end, const bool &initial, const bool &conti
         start = high_resolution_clock::now();
         reducematrix rou;
         rou.set(wavetorou(ground, 's', stream[0]),stream[0]);
+        cout << "GPUmem_1="<< GPU_memory_used_by_process() << "GB" << endl;
         th1.join();
         cublasSetStream(GlobalHandle, 0);
         systrun=routotrunc(rou, i+1==lx*ly/2);
-        
+
         rou.clear();
         cudaDeviceSynchronize();
         ground.clear();                                                                                                                                                                                                                              

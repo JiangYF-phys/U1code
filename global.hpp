@@ -32,7 +32,7 @@ extern reducematrixCPU fn_CPU, sz_CPU;
 
 extern int num_op;
 extern double j_1, j_2, j_3, hop, hopp, hubU, V_1, V_2, lan_error, trun_error, lan_error_0, trun_error_0;
-extern int lx, ly, ltot, ntot, jtot, sweep, lastsweep, kept_min, kept_max, truncpoint;
+extern int lx, ly, ltot, ntot, jtot, sweep, lastsweep, kept_min, kept_max, truncpoint, sweepend;
 extern int middleid, beginid, stopid, continueflag, measureflag, trainflag, constructflag, refpoint, bshift;
 extern int lanczos_ver, adjustflag;
 extern vector<char> optype, savetype;
@@ -141,5 +141,8 @@ extern cusolverDnHandle_t GlobalDnHandle;
 extern cudaStream_t BlasStream;
 extern cudaEvent_t cstart, cstop;
 extern double time_1, time_2, time_3, time_4; 
+
+double physical_memory_used_by_process();
+double GPU_memory_used_by_process();
 
 #endif /* global_hpp */
