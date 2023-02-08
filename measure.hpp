@@ -12,9 +12,14 @@ public:
 
 void measuresite(const reducematrix &op, const string &name, cudaStream_t stream[2]);
 void measurecorr(const reducematrix &op1, const reducematrix &op2, const double &para, const string &name, cudaStream_t stream[2]);
+void measurecorr_quick(const reducematrix &op1, const reducematrix &op2, const double &para, const string &name, cudaStream_t stream[2]);
+void measurecorr_quick_list(reducematrix* op1, reducematrix* op2, const int o_size, const double &para, const string &name, cudaStream_t stream[2]);
+
 // void measurefullcorr(const reducematrix &op1, const reducematrix &op2, const double &para,  const string &name);
 void measuresccor(const string &name, cudaStream_t stream[2]);
+void measuresccor_quick(const string &name, cudaStream_t stream[2]);
 void measuresccor_spinless(const string &name, cudaStream_t stream[2]);
+void measuresccor_spinless_quick(const string &name, cudaStream_t stream[2]);
 
 namespace spinless {
     void measurehelp(cudaStream_t stream[2]);

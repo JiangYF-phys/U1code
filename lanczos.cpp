@@ -152,7 +152,7 @@ void lanc_main_new(const Hamilton &sys, wave &lastwave, const Hamilton &env, con
             }
             cout << "; " << endl;
             th0.join();
-            if (inner==1) {upperbound=int((26000-Hmem)/wave_store[0].mem_size());}
+            if (inner==1) {upperbound=int((56000-Hmem)/wave_store[0].mem_size());}
             wave_store[inner-1].copy(myv[inner%2], stream[1]);
             memsize+=wave_store[inner-1].mem_size();
 

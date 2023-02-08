@@ -90,6 +90,12 @@ namespace tJmodel {
     namespace squarelatt {
         vector<bond> mylattice();
     }
+    namespace brickwalllatt {
+        vector<bond> mylattice();
+    }
+    namespace armchairlatt {
+        vector<bond> mylattice();
+    }
 }
 
 namespace Heisenberg {

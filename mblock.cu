@@ -463,12 +463,13 @@ ostream& operator<<(ostream& out, const mblock &block) {
 	double* mymat = new double[block.sleft*block.sright];
     cublasGetMatrix(block.sleft, block.sright, sizeof(*(block.mat)), block.mat, block.sleft, mymat, block.sleft);
     for (int i = 0; i < block.sleft; ++i) {
-		for (int j = 0; j < block.sright; j++) {
-			cout << mymat[i+j*block.sleft] << " ";
-		}
-		cout << endl;
+        cout << mymat[i+0*block.sleft] << " ";
+		// for (int j = 0; j < block.sright; j++) {
+		// 	cout << mymat[i+j*block.sleft] << " ";
+		// }
+		// cout << endl;
 	}
-    // cout << endl;
+    cout << endl;
     delete [] mymat;
     return out;
 }

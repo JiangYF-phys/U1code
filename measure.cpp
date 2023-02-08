@@ -4,35 +4,72 @@
 namespace spinless {
     void measurehelp(cudaStream_t stream[2]) {
         // measuresite(fn, "out/n.dat", stream);
-        measurecorr(fc_u_d, fc_u, 1.0, "out/fcor.dat", stream);
-        measuresccor_spinless("out/SCcor.dat", stream);
+        // measurecorr_quick(fc_u_d, fc_u, 1.0, "out/fcor.dat", stream);
+
+        int o_size=1;
+        reducematrix* opl1=new reducematrix[o_size] ();
+        reducematrix* opl2=new reducematrix[o_size] ();
+        opl1[0]=fc_u_d; opl2[0]=fc_u;
+        measurecorr_quick_list(opl1, opl2, o_size, 1.0, "out/fcor.dat", stream);
+        for (int i_o = 0; i_o < o_size; i_o++) {
+            opl1[i_o].clear(); opl2[i_o].clear();
+        }
+        delete [] opl1; delete [] opl2;
+
+        measuresccor_spinless_quick("out/SCcor.dat", stream);
     }
 }
 
 namespace Hubbard {
     void measurehelp(cudaStream_t stream[2]) {
         // measuresite(fn, "out/n.dat", stream);
-        measuresite(s_z, "out/Sz.dat", stream);
-        measurecorr(s_z, s_z, 1.0, "out/SzCor.dat", stream);
-        measurecorr(fc_u_d, fc_u, 1.0, "out/fcupCor.dat", stream);
-        measuresccor("out/FourSC.dat", stream);// to be developed
+        // measuresite(s_z, "out/Sz.dat", stream);
+
+        // measurecorr_quick(s_z, s_z, 1.0, "out/SzCor.dat", stream);
+        // measurecorr_quick(fc_u_d, fc_u, 1.0, "out/fcupCor.dat", stream);
+        // measurecorr_quick(fn, fn, 1.0, "out/fnCor.dat", stream);
+
+        int o_size=3;
+        reducematrix* opl1=new reducematrix[o_size] ();
+        reducematrix* opl2=new reducematrix[o_size] ();
+        opl1[0]=s_z; opl1[1]=fc_u_d; opl1[2]=fn; 
+        opl2[0]=s_z; opl2[1]=fc_u; opl2[2]=fn;
+        measurecorr_quick_list(opl1, opl2, o_size, 1.0, "out/Cor_Sz_fc_fn.dat", stream);
+        for (int i_o = 0; i_o < o_size; i_o++) {
+            opl1[i_o].clear(); opl2[i_o].clear();
+        }
+        delete [] opl1; delete [] opl2;
+
+        measuresccor_quick("out/FourSC.dat", stream);// to be developed
     }
 }
 
 namespace tJmodel {
     void measurehelp(cudaStream_t stream[2]) {
         // measuresite(fn, "out/n.dat", stream);
-        measuresite(s_z, "out/Sz.dat", stream);
-        measurecorr(s_z, s_z, 1.0, "out/SzCor.dat", stream);
-        measurecorr(fc_u_d, fc_u, 1.0, "out/fcupCor.dat", stream);
-        // measuresccor("out/FourSC.dat", stream); to be developed
+        // measuresite(s_z, "out/Sz.dat", stream);
+        // measurecorr_quick(s_z, s_z, 1.0, "out/SzCor.dat", stream);
+        // measurecorr_quick(fc_u_d, fc_u, 1.0, "out/fcupCor.dat", stream);
+
+        int o_size=2;
+        reducematrix* opl1=new reducematrix[o_size] ();
+        reducematrix* opl2=new reducematrix[o_size] ();
+        opl1[0]=s_z; opl1[1]=fc_u_d;
+        opl2[0]=s_z; opl2[1]=fc_u;
+        measurecorr_quick_list(opl1, opl2, o_size, 1.0, "out/Cor_Sz_fc.dat", stream);
+        for (int i_o = 0; i_o < o_size; i_o++) {
+            opl1[i_o].clear(); opl2[i_o].clear();
+        }
+        delete [] opl1; delete [] opl2;
+
+        measuresccor_quick("out/FourSC.dat", stream);
     }
 }
 
 namespace Heisenberg {
     void measurehelp(cudaStream_t stream[2]) {
-        measuresite(s_z, "out/Sz.dat", stream);
-        measurecorr(s_z, s_z, 1.0, "out/SzCor.dat", stream);
+        // measuresite(s_z, "out/Sz.dat", stream);
+        measurecorr_quick(s_z, s_z, 1.0, "out/SzCor.dat", stream);
     }
 }
 
@@ -94,29 +131,25 @@ void move_sysop(reducematrix &op, const int &begid, const int &endid, const bool
 			op = op.applytrunc(trun, stream[0]);
 		}
 
-        reducematrix sys_trun[2];
-
-        if (begid+1<endid && begid+1>truncpoint) {
-            sys_trun[(begid+1)%2].fromdisk(file + "systrun" + to_string(begid+1), 'n', stream[0]);
-        }
+        reducematrix sys_trun;
 		for (int i = begid+1; i < endid; ++i) {
-            int myi=i+1;
-            thread th0(read_sys_trun_help, ref(sys_trun[(myi)%2]), ref(myi), ref(endid), ref(stream[1]));
-            // if (i+1>truncpoint && i+1<endid) {
-            //     sys_trun[(i+1)%2].fromdisk(file + "systrun" + to_string(i+1), 'n', stream[1]);
-            // }
+            // int myi=i+1;
+            // thread th0(read_sys_trun_help, ref(sys_trun[(myi)%2]), ref(myi), ref(endid), ref(stream[1]));
+            if (i>truncpoint) {
+                sys_trun.fromdisk(file + "systrun" + to_string(i), 'n', stream[0]);
+            }
 			mapfromdisk(basis, file+"sysmap"+to_string(i));
 			newop.clear();
             newop.prod_id(op, site.Ham, basis, 1.0, 'r', stream[0]);
             
             if (i>truncpoint) {
-                op.set(newop.applytrunc(sys_trun[i%2], stream[0]), stream[0]);
-				// op=newop.applytrunc(sys_trun[i%2], stream[0]);
+                op.set(newop.applytrunc(sys_trun, stream[0]), stream[0]);
+                sys_trun.clear();
 			} else {
 				op.set(newop, stream[0]);
 			}
 
-            th0.join();
+            // th0.join();
             // cout << op << endl;
 		}
 		mapfromdisk(basis, file+"sysmap"+to_string(endid));
@@ -165,6 +198,65 @@ void move_envop(reducematrix &op, const int &begid, const int &endid, const bool
 	}
 }
 
+void move_sysop_list(reducematrix* op, const int &o_size, const int &begid, const int &endid, const bool &create, cudaStream_t stream[2]) {
+	// reducematrix newop(0, op.sign());
+	vector<repmap> basis;
+	if (create) {
+		if (begid > 1) {
+            mapfromdisk(basis, file + "sysmap" + to_string(begid));
+            reducematrix id1 = basistoid(basis, 'l');
+            for (int i_o = 0; i_o < o_size; i_o++) {
+                reducematrix newop(0, op[i_o].sign());
+    			newop.prod_id(id1, op[i_o], basis, 1.0, 'l', stream[0]);
+                op[i_o]=newop;
+            }
+		} else {
+			basis = jmap(Jtarget.Ham, site.Ham);
+            for (int i_o = 0; i_o < o_size; i_o++) {
+                reducematrix newop(0, op[i_o].sign());
+    			newop.prod_id(Jtarget.Ham, op[i_o], basis, 1.0, 'l', stream[0]);
+                op[i_o]=newop;
+            }
+		}
+	}
+    
+	if (begid<endid) {
+        reducematrix sys_trun;
+		if (begid>truncpoint) {
+            sys_trun.fromdisk(file + "systrun" + to_string(begid), 'n', stream[0]);
+            for (int i_o = 0; i_o < o_size; i_o++) {
+                op[i_o] = op[i_o].applytrunc(sys_trun, stream[0]);
+            }
+            sys_trun.clear();
+		}
+		for (int i = begid+1; i < endid; ++i) {
+            if (i>truncpoint) {
+                sys_trun.fromdisk(file + "systrun" + to_string(i), 'n', stream[0]);
+            }
+            mapfromdisk(basis, file+"sysmap"+to_string(i));
+            for (int i_o = 0; i_o < o_size; i_o++) {
+                reducematrix newop(0, op[i_o].sign());
+                newop.prod_id(op[i_o], site.Ham, basis, 1.0, 'r', stream[0]);
+                if (i>truncpoint) {
+                    op[i_o].set(newop.applytrunc(sys_trun, stream[0]), stream[0]);
+                    
+                } else {
+                    op[i_o].set(newop, stream[0]);
+                }
+            }
+            // th0.join();
+            // cout << op << endl;
+		}
+        
+		mapfromdisk(basis, file+"sysmap"+to_string(endid));
+		for (int i_o = 0; i_o < o_size; i_o++) {
+            reducematrix newop(0, op[i_o].sign());
+            newop.prod_id(op[i_o], site.Ham, basis, 1.0, 'r', stream[0]);
+		    op[i_o] = newop;
+        }
+	}
+}
+
 double sys_measure(reducematrix &myop) {
     double val;
     wave wav(ground, 0);
@@ -204,6 +296,78 @@ double singlesite(const reducematrix &myop, const int &siteid, cudaStream_t stre
         val=env_measure(op);
 	}
 	return val;
+}
+
+void measurecorr_quick(const reducematrix &op1, const reducematrix &op2, const double &para, const string &name, cudaStream_t stream[2]) {
+    ofstream out(name.c_str(), ios::out | ios::app);
+    if (out.is_open()) {
+        out << scientific;
+        out << "ltot = " << ltot << endl;
+        out << "ref = " << twopoint[0] << endl;
+        if (twopoint[0]<=stopid) {
+            reducematrix myop1;
+            myop1=op1;
+            move_sysop(myop1, twopoint[0], twopoint[0], true, stream);
+            for (int i = 1; i < twopoint.size(); ++i) {
+                if (twopoint[i]<=stopid) {
+                    reducematrix myop2, myop;
+                    myop2=op2;
+                    move_sysop(myop1, twopoint[i-1], twopoint[i], false, stream);
+                    move_sysop(myop2, twopoint[i], twopoint[i], true, stream);
+                    myop=myop1.mul(myop2);
+                    move_sysop(myop, twopoint[i], stopid, false, stream);
+                    out << i << " " << para*sys_measure(myop) << endl;
+                }
+            }
+        }
+        out << endl;
+        out.close();
+    }
+}
+
+void measurecorr_quick_list(reducematrix* op1, reducematrix* op2, const int o_size, const double &para, const string &name, cudaStream_t stream[2]) {
+    ofstream out(name.c_str(), ios::out | ios::app);
+    if (out.is_open()) {
+        out << scientific;
+        out << "ltot = " << ltot << endl;
+        out << "ref = " << twopoint[0] << endl;
+        if (twopoint[twopoint.size()-1]<=stopid) {
+            reducematrix* myop1 = new reducematrix[o_size];
+            for (int i_o = 0; i_o < o_size; i_o++) {
+                myop1[i_o]=op1[i_o];
+            }
+            move_sysop_list(myop1, o_size, twopoint[0], twopoint[0], true, stream);
+            
+            for (int i = 1; i < twopoint.size(); ++i) {
+                if (twopoint[i]<=stopid) {
+                    reducematrix* myop2 = new reducematrix[o_size];
+                    for (int i_o = 0; i_o < o_size; i_o++) {
+                        myop2[i_o]=op2[i_o];
+                    }
+                    move_sysop_list(myop1, o_size, twopoint[i-1], twopoint[i], false, stream);
+                    move_sysop_list(myop2, o_size, twopoint[i], twopoint[i], true, stream);
+                    reducematrix* myop = new reducematrix[o_size];
+                    for (int i_o = 0; i_o < o_size; i_o++) {
+                        myop[i_o]=myop1[i_o].mul(myop2[i_o]);
+                        myop2[i_o].clear();
+                    }
+                    delete [] myop2;
+                    move_sysop_list(myop, o_size, twopoint[i], stopid, false, stream);
+                    out << i << " " ;
+                    for (int i_o = 0; i_o < o_size; i_o++) {
+                        out << sys_measure(myop[i_o]) << " ";
+                        myop[i_o].clear();
+                    }
+                    out << endl;
+                    delete [] myop;
+                }
+            }
+        } else {
+            out << "error: lastsite " << twopoint[twopoint.size()-1] << " is larger than stopid " << stopid << endl;
+        }
+        out << endl;
+        out.close();
+    }
 }
 
 reducematrix two_sys_site(const reducematrix &op1, const reducematrix &op2, const int &opid1, const int &opid2, cudaStream_t stream[2]) {
@@ -430,6 +594,123 @@ void measuresccor(const string &name, cudaStream_t stream[2]) {
     }
 }
 
+
+void measuresccor_quick(const string &name, cudaStream_t stream[2]) {
+    ofstream out(name.c_str(), ios::out | ios::app);
+    
+    if (out.is_open()) {
+        out << scientific;
+        out << "ltot = " << ltot << endl;
+        for (int n = 0; n < fourpoint.size(); ++n) {
+            out << "ref=" << fourpoint[n][0].l1 << ", " << fourpoint[n][0].l2 << endl;
+
+            if (fourpoint[n][0].l1 < fourpoint[n][0].l2) {
+                reducematrix myop, myop_tmp;
+                myop=fc_u_d; myop_tmp=fc_d_d;
+                move_sysop(myop, fourpoint[n][0].l1, fourpoint[n][0].l2, true, stream);
+                move_sysop(myop_tmp, fourpoint[n][0].l2, fourpoint[n][0].l2, true, stream);
+                myop=myop.mul(myop_tmp);
+                int myloc=fourpoint[n][0].l2;
+
+                double val[fourpoint[n].size()];
+                for (int i = 1; i < fourpoint[n].size(); ++i) {
+                    if (fourpoint[n][0].l2 < fourpoint[n][i].l1 && fourpoint[n][i].l1<fourpoint[n][i].l2 ) {
+                        move_sysop(myop, myloc, fourpoint[n][i].l1, false, stream);
+                        myloc=fourpoint[n][i].l1;
+
+                        reducematrix myop1;
+                        myop_tmp=fc_d;
+                        move_sysop(myop_tmp, fourpoint[n][i].l1, fourpoint[n][i].l1, true, stream);
+
+                        myop1=myop.mul(myop_tmp);
+                        move_sysop(myop1, fourpoint[n][i].l1, fourpoint[n][i].l2, false, stream);
+
+                        myop_tmp=fc_u;
+                        move_sysop(myop_tmp, fourpoint[n][i].l2, fourpoint[n][i].l2, true, stream);
+
+                        myop1=myop1.mul(myop_tmp);
+
+                        reducematrix myop2;
+                        myop_tmp=fc_u;
+                        move_sysop(myop_tmp, fourpoint[n][i].l1, fourpoint[n][i].l1, true, stream);
+
+                        myop2=myop.mul(myop_tmp);
+                        move_sysop(myop2, fourpoint[n][i].l1, fourpoint[n][i].l2, false, stream);
+
+                        myop_tmp=fc_d;
+                        move_sysop(myop_tmp, fourpoint[n][i].l2, fourpoint[n][i].l2, true, stream);
+
+                        myop2=myop2.mul(myop_tmp);
+
+                        myop1.mul_add(-1.0, myop2,stream[0]);
+
+                        move_sysop(myop1, fourpoint[n][i].l2, stopid, false, stream);
+
+                        val[i-1]=sys_measure(myop1);
+                        move_sysop(myop, myloc, fourpoint[n][i].l2, false, stream);
+                        myloc=fourpoint[n][i].l2;
+                    }
+                }
+
+                myop=fc_d_d; myop_tmp=fc_u_d;
+                move_sysop(myop, fourpoint[n][0].l1, fourpoint[n][0].l2, true, stream);
+                move_sysop(myop_tmp, fourpoint[n][0].l2, fourpoint[n][0].l2, true, stream);
+                myop=myop.mul(myop_tmp);
+                myloc=fourpoint[n][0].l2;
+
+                for (int i = 1; i < fourpoint[n].size(); ++i) {
+                    if (fourpoint[n][0].l2 < fourpoint[n][i].l1 && fourpoint[n][i].l1<fourpoint[n][i].l2 ) {
+                        move_sysop(myop, myloc, fourpoint[n][i].l1, false, stream);
+                        myloc=fourpoint[n][i].l1;
+
+                        reducematrix myop1;
+                        myop_tmp=fc_u;
+                        move_sysop(myop_tmp, fourpoint[n][i].l1, fourpoint[n][i].l1, true, stream);
+
+                        myop1=myop.mul(myop_tmp);
+                        move_sysop(myop1, fourpoint[n][i].l1, fourpoint[n][i].l2, false, stream);
+
+                        myop_tmp=fc_d;
+                        move_sysop(myop_tmp, fourpoint[n][i].l2, fourpoint[n][i].l2, true, stream);
+
+                        myop1=myop1.mul(myop_tmp);
+
+                        reducematrix myop2;
+                        myop_tmp=fc_d;
+                        move_sysop(myop_tmp, fourpoint[n][i].l1, fourpoint[n][i].l1, true, stream);
+
+                        myop2=myop.mul(myop_tmp);
+                        move_sysop(myop2, fourpoint[n][i].l1, fourpoint[n][i].l2, false, stream);
+
+                        myop_tmp=fc_u;
+                        move_sysop(myop_tmp, fourpoint[n][i].l2, fourpoint[n][i].l2, true, stream);
+
+                        myop2=myop2.mul(myop_tmp);
+
+                        myop1.mul_add(-1.0, myop2,stream[0]);
+
+                        move_sysop(myop1, fourpoint[n][i].l2, stopid, false, stream);
+
+                        val[i-1]+=sys_measure(myop1);
+                        move_sysop(myop, myloc, fourpoint[n][i].l2, false, stream);
+                        myloc=fourpoint[n][i].l2;
+
+                        // val+= sc_helper(fc_u_d, fc_d_d, fc_d, fc_u, fourpoint[n][0].l1, fourpoint[n][0].l2, fourpoint[n][i].l1, fourpoint[n][i].l2, stream);
+                        // val+=-sc_helper(fc_u_d, fc_d_d, fc_u, fc_d, fourpoint[n][0].l1, fourpoint[n][0].l2, fourpoint[n][i].l1, fourpoint[n][i].l2, stream);
+                        // val+=-sc_helper(fc_d_d, fc_u_d, fc_d, fc_u, fourpoint[n][0].l1, fourpoint[n][0].l2, fourpoint[n][i].l1, fourpoint[n][i].l2, stream);
+                        // val+= sc_helper(fc_d_d, fc_u_d, fc_u, fc_d, fourpoint[n][0].l1, fourpoint[n][0].l2, fourpoint[n][i].l1, fourpoint[n][i].l2, stream);
+                        out << i << " " << n << " " << val[i-1] << endl;
+                    } else {
+                        out << i << " " << n << " " << 0.0 << endl;
+                    }
+                }
+            }
+        }
+        out << endl;
+        out.close();
+    }
+}
+
 void measuresccor_spinless(const string &name, cudaStream_t stream[2]) {
     ofstream out(name.c_str(), ios::out | ios::app);
     double val;
@@ -443,6 +724,60 @@ void measuresccor_spinless(const string &name, cudaStream_t stream[2]) {
                 val=0.0;
                 val+= sc_helper(fc_u_d, fc_u_d, fc_u, fc_u, fourpoint[n][0].l1, fourpoint[n][0].l2, fourpoint[n][i].l1, fourpoint[n][i].l2, stream);
                 out << i << " " << n << " " << val << endl;
+            }
+        }
+        out << endl;
+        out.close();
+    }
+}
+
+
+void measuresccor_spinless_quick(const string &name, cudaStream_t stream[2]) {
+    ofstream out(name.c_str(), ios::out | ios::app);
+    
+    if (out.is_open()) {
+        out << scientific;
+        out << "ltot = " << ltot << endl;
+        for (int n = 0; n < fourpoint.size(); ++n) {
+            out << "ref=" << fourpoint[n][0].l1 << ", " << fourpoint[n][0].l2 << endl;
+
+            if (fourpoint[n][0].l1 < fourpoint[n][0].l2) {
+                reducematrix myop, myop_tmp;
+                myop=fc_u_d; myop_tmp=fc_u_d;
+                move_sysop(myop, fourpoint[n][0].l1, fourpoint[n][0].l2, true, stream);
+                move_sysop(myop_tmp, fourpoint[n][0].l2, fourpoint[n][0].l2, true, stream);
+                myop=myop.mul(myop_tmp);
+                int myloc=fourpoint[n][0].l2;
+
+                double val;
+                for (int i = 1; i < fourpoint[n].size(); ++i) {
+                    if (fourpoint[n][0].l2 < fourpoint[n][i].l1 && fourpoint[n][i].l1<fourpoint[n][i].l2 ) {
+                        move_sysop(myop, myloc, fourpoint[n][i].l1, false, stream);
+                        myloc=fourpoint[n][i].l1;
+
+                        reducematrix myop1;
+                        myop_tmp=fc_u;
+                        move_sysop(myop_tmp, fourpoint[n][i].l1, fourpoint[n][i].l1, true, stream);
+
+                        myop1=myop.mul(myop_tmp);
+                        move_sysop(myop1, fourpoint[n][i].l1, fourpoint[n][i].l2, false, stream);
+
+                        myop_tmp=fc_u;
+                        move_sysop(myop_tmp, fourpoint[n][i].l2, fourpoint[n][i].l2, true, stream);
+
+                        myop1=myop1.mul(myop_tmp);
+
+                        move_sysop(myop1, fourpoint[n][i].l2, stopid, false, stream);
+
+                        val=sys_measure(myop1);
+                        out << i << " " << n << " " << val << endl;
+
+                        move_sysop(myop, myloc, fourpoint[n][i].l2, false, stream);
+                        myloc=fourpoint[n][i].l2;
+                    } else {
+                        out << i << " " << n << " " << 0.0 << endl;
+                    }
+                }
             }
         }
         out << endl;

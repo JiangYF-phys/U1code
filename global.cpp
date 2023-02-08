@@ -710,6 +710,119 @@ namespace tJmodel {
 		}
 	}
 
+	namespace brickwalllatt {
+		vector<bond> mylattice() {
+			vector<bond> latt;
+			ltot = lx * ly;
+			vector<double> amp{def_int.begin(), def_int.end()};
+			bond tmp(amp, icoef, 0, 0);
+			for (int i = 0; i < lx - 1; ++i) {
+				for (int j = 0; j < ly; j++) {
+					int loc1 = tolat(i, j);
+					int loc2 = tolat(i + 1, j);
+					tmp.def(amp, icoef, loc1, loc2);
+					latt.push_back(tmp);
+				}
+			}
+
+			for (int i = 0; i < lx; ++i) {
+				for (int j = 0; j < ly; j++) {
+					if (i%2==1) {
+						int loc1 = tolat(i, j);
+						int loc2 = tolat(i - 1, j + 1);
+						tmp.def(amp, icoef, loc1, loc2);
+						latt.push_back(tmp);
+					}
+				}
+			}
+
+			amp[0] = -hopp; amp[1] = -hopp; amp[2] = j_2; amp[3] = j_2/2; amp[4] = -j_2/4;
+			for (int i = 0; i < lx - 2; ++i) {
+				for (int j = 0; j < ly; j++) {
+					int loc1 = tolat(i, j);
+					int loc2 = tolat(i + 2, j);
+					tmp.def(amp, icoef, loc1, loc2);
+					latt.push_back(tmp);
+				}
+			}
+
+			for (int i = 0; i < lx; ++i) {
+				for (int j = 0; j < ly; j++) {
+					int loc1 = tolat(i, j);
+					int loc2 = tolat(i, j+1);
+					tmp.def(amp, icoef, loc1, loc2);
+					latt.push_back(tmp);
+				}
+			}
+
+			for (int i = 2; i < lx; ++i) {
+				for (int j = 0; j < ly; j++) {
+					int loc1 = tolat(i, j);
+					int loc2 = tolat(i-2, j+1);
+					tmp.def(amp, icoef, loc1, loc2);
+					latt.push_back(tmp);
+				}
+			}
+			return latt;
+		}
+	}
+
+	namespace armchairlatt {
+		vector<bond> mylattice() {
+			vector<bond> latt;
+			ltot = lx * ly;
+			vector<double> amp{def_int.begin(), def_int.end()};
+			bond tmp(amp, icoef, 0, 0);
+			for (int i = 0; i < lx - 1; ++i) {
+				for (int j = 0; j < ly; j++) {
+					int loc1 = tolat(i, j);
+					int loc2 = tolat(i + 1, j);
+					tmp.def(amp, icoef, loc1, loc2);
+					latt.push_back(tmp);
+				}
+			}
+
+			for (int i = 0; i < lx; ++i) {
+				for (int j = 0; j < ly; j++) {
+					if ((i+j)%2==0) {
+						int loc1 = tolat(i, j);
+						int loc2 = tolat(i, j + 1);
+						tmp.def(amp, icoef, loc1, loc2);
+						latt.push_back(tmp);
+					}
+				}
+			}
+
+			amp[0] = -hopp; amp[1] = -hopp; amp[2] = j_2; amp[3] = j_2/2; amp[4] = -j_2/4;
+			for (int i = 0; i < lx - 2; ++i) {
+				for (int j = 0; j < ly; j++) {
+					int loc1 = tolat(i, j);
+					int loc2 = tolat(i + 2, j);
+					tmp.def(amp, icoef, loc1, loc2);
+					latt.push_back(tmp);
+				}
+			}
+
+			for (int i = 0; i < lx-1; ++i) {
+				for (int j = 0; j < ly; j++) {
+					int loc1 = tolat(i, j);
+					int loc2 = tolat(i+1, j+1);
+					tmp.def(amp, icoef, loc1, loc2);
+					latt.push_back(tmp);
+				}
+			}
+
+			for (int i = 0; i < lx-1; ++i) {
+				for (int j = 0; j < ly; j++) {
+					int loc1 = tolat(i, j);
+					int loc2 = tolat(i+1, j-1);
+					tmp.def(amp, icoef, loc1, loc2);
+					latt.push_back(tmp);
+				}
+			}
+			return latt;
+		}
+	}
 }
 
 namespace Heisenberg {
@@ -963,7 +1076,7 @@ namespace square {
 	vector<int> settwopoint(int y) {
 		vector<int> mysites;
 		mysites.clear();
-		for (int i = 0; i <= lx/2+1; ++i) {
+		for (int i = 0; tolat(refpoint+i, y) <= stopid; ++i) {
 			mysites.push_back(tolat(refpoint+i, y));
 		}
 		return mysites;
@@ -985,7 +1098,7 @@ namespace square {
 		loc2 = tolat(refpoint, y+1);
 		tmp.def(amp, icoef, loc1, loc2);
 		mysites.push_back(tmp);
-		for (int i = 1; i < lx/2+1; ++i) {
+		for (int i = 1; tolat(refpoint+i+1, y)<stopid; ++i) {
 			loc1 = tolat(refpoint+i, y);
 			loc2 = tolat(refpoint+i, y+1);
 			tmp.def(amp, icoef, loc1, loc2);
@@ -999,7 +1112,7 @@ namespace square {
 		loc2 = tolat(refpoint, y+1);
 		tmp.def(amp, icoef, loc1, loc2);
 		mysites.push_back(tmp);
-		for (int i = 1; i < lx/2+1; ++i) {
+		for (int i = 1; tolat(refpoint+i+1, y)<stopid; ++i) {
 			loc1 = tolat(refpoint+i, y);
 			loc2 = tolat(refpoint+i+1, y);
 			tmp.def(amp, icoef, loc1, loc2);
@@ -1013,7 +1126,7 @@ namespace square {
 		loc2 = tolat(refpoint+1, y);
 		tmp.def(amp, icoef, loc1, loc2);
 		mysites.push_back(tmp);
-		for (int i = 1; i < lx/2+1; ++i) {
+		for (int i = 1; tolat(refpoint+i+1, y)<stopid; ++i) {
 			loc1 = tolat(refpoint+i, y);
 			loc2 = tolat(refpoint+i, y+1);
 			tmp.def(amp, icoef, loc1, loc2);
@@ -1027,7 +1140,7 @@ namespace square {
 		loc2 = tolat(refpoint+1, y);
 		tmp.def(amp, icoef, loc1, loc2);
 		mysites.push_back(tmp);
-		for (int i = 1; i < lx/2+1; ++i) {
+		for (int i = 1; tolat(refpoint+i+1, y)<stopid; ++i) {
 			loc1 = tolat(refpoint+i, y);
 			loc2 = tolat(refpoint+i+1, y);
 			tmp.def(amp, icoef, loc1, loc2);
@@ -1045,7 +1158,7 @@ namespace triangle {
 	vector<int> settwopoint(int y) {
 		vector<int> mysites;
 		mysites.clear();
-		for (int i = 0; i <= lx/2+1; ++i) {
+		for (int i = 0; tolat(refpoint+i, y) <= stopid; ++i) {
 			mysites.push_back(tolat(refpoint+i, y));
 		}
 		return mysites;
@@ -1067,7 +1180,7 @@ namespace triangle {
 		loc2 = tolat(refpoint, y+1);
 		tmp.def(amp, icoef, loc1, loc2);
 		mysites.push_back(tmp);
-		for (int i = 1; i < lx/2+1; ++i) {
+		for (int i = 1; tolat(refpoint+i+1, y) < stopid; ++i) {
 			loc1 = tolat(refpoint+i, y);
 			loc2 = tolat(refpoint+i, y+1);
 			tmp.def(amp, icoef, loc1, loc2);
@@ -1081,7 +1194,7 @@ namespace triangle {
 		loc2 = tolat(refpoint, y+1);
 		tmp.def(amp, icoef, loc1, loc2);
 		mysites.push_back(tmp);
-		for (int i = 1; i < lx/2+1; ++i) {
+		for (int i = 1; tolat(refpoint+i+1, y) < stopid; ++i) {
 			loc1 = tolat(refpoint+i, y);
 			loc2 = tolat(refpoint+i+1, y);
 			tmp.def(amp, icoef, loc1, loc2);
@@ -1095,7 +1208,7 @@ namespace triangle {
 		loc2 = tolat(refpoint+1, y);
 		tmp.def(amp, icoef, loc1, loc2);
 		mysites.push_back(tmp);
-		for (int i = 1; i < lx/2+1; ++i) {
+		for (int i = 1; tolat(refpoint+i+1, y) < stopid; ++i) {
 			loc1 = tolat(refpoint+i, y);
 			loc2 = tolat(refpoint+i, y+1);
 			tmp.def(amp, icoef, loc1, loc2);
@@ -1109,7 +1222,7 @@ namespace triangle {
 		loc2 = tolat(refpoint+1, y);
 		tmp.def(amp, icoef, loc1, loc2);
 		mysites.push_back(tmp);
-		for (int i = 1; i < lx/2+1; ++i) {
+		for (int i = 1; tolat(refpoint+i+1, y) < stopid; ++i) {
 			loc1 = tolat(refpoint+i, y);
 			loc2 = tolat(refpoint+i+1, y);
 			tmp.def(amp, icoef, loc1, loc2);
@@ -1129,7 +1242,7 @@ namespace brickwall {
 	vector<int> settwopoint(int y) {
 		vector<int> mysites;
 		mysites.clear();
-		for (int i = 0; i <= lx/2+1; ++i) {
+		for (int i = 0; tolat(refpoint+i, y) < stopid; ++i) {
 			mysites.push_back(tolat(refpoint+i, y));
 		}
 		return mysites;
@@ -1147,13 +1260,13 @@ namespace brickwall {
 		out << "pair correlation label:" << endl;
 
 		mysites.clear();
-		loc1 = tolat(refpoint, y);
-		loc2 = tolat(refpoint-1, y+1);
+		loc1 = tolat(refpoint-1, y+1);
+		loc2 = tolat(refpoint, y);
 		tmp.def(amp, icoef, loc1, loc2);
 		mysites.push_back(tmp);
-		for (int i = 1; i < lx/4+1; ++i) {
-			loc1 = tolat(refpoint+2*i, y);
-			loc2 = tolat(refpoint+2*i-1, y+1);
+		for (int i = 1; tolat(refpoint+2*i+1, y) < stopid; ++i) {
+			loc1 = tolat(refpoint+2*i-1, y+1);
+			loc2 = tolat(refpoint+2*i, y);
 			tmp.def(amp, icoef, loc1, loc2);
 			mysites.push_back(tmp);
 		}
@@ -1165,7 +1278,7 @@ namespace brickwall {
 		loc2 = tolat(refpoint+1, y);
 		tmp.def(amp, icoef, loc1, loc2);
 		mysites.push_back(tmp);
-		for (int i = 1; i < lx/4+1; ++i) {
+		for (int i = 1; tolat(refpoint+2*i+1, y) < stopid; ++i) {
 			loc1 = tolat(refpoint+2*i, y);
 			loc2 = tolat(refpoint+2*i+1, y);
 			tmp.def(amp, icoef, loc1, loc2);
@@ -1175,13 +1288,13 @@ namespace brickwall {
 		out << allsets.size() << ": YY" << endl;
 
 		mysites.clear();
-		loc1 = tolat(refpoint, y);
-		loc2 = tolat(refpoint-1, y);
+		loc1 = tolat(refpoint-1, y);
+		loc2 = tolat(refpoint, y);
 		tmp.def(amp, icoef, loc1, loc2);
 		mysites.push_back(tmp);
-		for (int i = 1; i < lx/4+1; ++i) {
-			loc1 = tolat(refpoint+2*i, y);
-			loc2 = tolat(refpoint+2*i-1, y);
+		for (int i = 1; tolat(refpoint+2*i+1, y) < stopid; ++i) {
+			loc1 = tolat(refpoint+2*i-1, y);
+			loc2 = tolat(refpoint+2*i, y);
 			tmp.def(amp, icoef, loc1, loc2);
 			mysites.push_back(tmp);
 		}
@@ -1189,11 +1302,11 @@ namespace brickwall {
 		out << allsets.size() << ": XX" << endl;
 
 		mysites.clear();
-		loc1 = tolat(refpoint, y);
-		loc2 = tolat(refpoint-1, y+1);
+		loc1 = tolat(refpoint-1, y+1);
+		loc2 = tolat(refpoint, y);
 		tmp.def(amp, icoef, loc1, loc2);
 		mysites.push_back(tmp);
-		for (int i = 1; i < lx/4+1; ++i) {
+		for (int i = 1; tolat(refpoint+2*i+1, y) < stopid; ++i) {
 			loc1 = tolat(refpoint+2*i, y);
 			loc2 = tolat(refpoint+2*i+1, y);
 			tmp.def(amp, icoef, loc1, loc2);
@@ -1203,13 +1316,13 @@ namespace brickwall {
 		out << allsets.size() << ": ZY" << endl;
 
 		mysites.clear();
-		loc1 = tolat(refpoint, y);
-		loc2 = tolat(refpoint-1, y+1);
+		loc1 = tolat(refpoint-1, y+1);
+		loc2 = tolat(refpoint, y);
 		tmp.def(amp, icoef, loc1, loc2);
 		mysites.push_back(tmp);
-		for (int i = 1; i < lx/4+1; ++i) {
-			loc1 = tolat(refpoint+2*i, y);
-			loc2 = tolat(refpoint+2*i-1, y);
+		for (int i = 1; tolat(refpoint+2*i+1, y) < stopid; ++i) {
+			loc1 = tolat(refpoint+2*i-1, y);
+			loc2 = tolat(refpoint+2*i, y);
 			tmp.def(amp, icoef, loc1, loc2);
 			mysites.push_back(tmp);
 		}
@@ -1221,9 +1334,9 @@ namespace brickwall {
 		loc2 = tolat(refpoint+1, y);
 		tmp.def(amp, icoef, loc1, loc2);
 		mysites.push_back(tmp);
-		for (int i = 1; i < lx/4+1; ++i) {
-			loc1 = tolat(refpoint+2*i, y);
-			loc2 = tolat(refpoint+2*i-1, y);
+		for (int i = 1; tolat(refpoint+2*i+1, y) < stopid; ++i) {
+			loc1 = tolat(refpoint+2*i-1, y);
+			loc2 = tolat(refpoint+2*i, y);
 			tmp.def(amp, icoef, loc1, loc2);
 			mysites.push_back(tmp);
 		}
@@ -1238,7 +1351,7 @@ namespace armchair {
 	vector<int> settwopoint(int y) {
 		vector<int> mysites;
 		mysites.clear();
-		for (int i = 0; i <= 3*lx/4+1; ++i) {
+		for (int i = 0; tolat(refpoint+i, y) < stopid; ++i) {
 			mysites.push_back(tolat(refpoint+i, y));
 		}
 		return mysites;
@@ -1286,13 +1399,13 @@ namespace armchair {
 		out << allsets.size() << ": YY" << endl;
 
 		mysites.clear();
-		loc1 = tolat(refpoint, y);
-		loc2 = tolat(refpoint-1, y);
+		loc1 = tolat(refpoint-1, y);
+		loc2 = tolat(refpoint, y);
 		tmp.def(amp, icoef, loc1, loc2);
 		mysites.push_back(tmp);
 		for (int i = 1; tolat(refpoint+2*i+1, y+1) < stopid; ++i) {
-			loc1 = tolat(refpoint+2*i, y);
-			loc2 = tolat(refpoint+2*i-1, y);
+			loc1 = tolat(refpoint+2*i-1, y);
+			loc2 = tolat(refpoint+2*i, y);
 			tmp.def(amp, icoef, loc1, loc2);
 			mysites.push_back(tmp);
 		}
@@ -1319,8 +1432,8 @@ namespace armchair {
 		tmp.def(amp, icoef, loc1, loc2);
 		mysites.push_back(tmp);
 		for (int i = 1; tolat(refpoint+2*i+1, y+1) < stopid; ++i) {
-			loc1 = tolat(refpoint+2*i, y);
-			loc2 = tolat(refpoint+2*i-1, y);
+			loc1 = tolat(refpoint+2*i-1, y);
+			loc2 = tolat(refpoint+2*i, y);
 			tmp.def(amp, icoef, loc1, loc2);
 			mysites.push_back(tmp);
 		}
@@ -1333,8 +1446,8 @@ namespace armchair {
 		tmp.def(amp, icoef, loc1, loc2);
 		mysites.push_back(tmp);
 		for (int i = 1; tolat(refpoint+2*i+1, y+1) < stopid; ++i) {
-			loc1 = tolat(refpoint+2*i, y);
-			loc2 = tolat(refpoint+2*i-1, y);
+			loc1 = tolat(refpoint+2*i-1, y);
+			loc2 = tolat(refpoint+2*i, y);
 			tmp.def(amp, icoef, loc1, loc2);
 			mysites.push_back(tmp);
 		}

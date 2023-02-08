@@ -427,11 +427,17 @@ void RtoL(const int &beg, const int &end, const bool &initial) {
             if (i==ltot-beg-1) {
                 myw.setzero(stream[0]);
                 myw.mul(sys.Ham, siteCPU.Ham, ground, fn_CPU, env.Ham, 1.0, "iini", sysbasis, envbasis, stream[0]);
-                mout << ltot-i << " " << myw.dot(ground) << endl;
+                mout << ltot-i << " " << myw.dot(ground);
+				myw.setzero(stream[0]);
+                myw.mul(sys.Ham, siteCPU.Ham, ground, sz_CPU, env.Ham, 1.0, "iini", sysbasis, envbasis, stream[0]);
+				mout << " " << myw.dot(ground) << endl;
             }
             myw.setzero(stream[0]);
             myw.mul(sys.Ham, fn_CPU, ground, siteCPU.Ham, env.Ham, 1.0, "inii", sysbasis, envbasis, stream[0]);
-            mout << ltot-i-1 << " " << myw.dot(ground) << endl;
+            mout << ltot-i-1 << " " << myw.dot(ground);
+			myw.setzero(stream[0]);
+            myw.mul(sys.Ham, sz_CPU, ground, siteCPU.Ham, env.Ham, 1.0, "inii", sysbasis, envbasis, stream[0]);
+            mout << " " << myw.dot(ground) << endl;
         }
         
         sys.clear();
