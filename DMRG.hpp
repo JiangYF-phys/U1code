@@ -13,7 +13,7 @@ void nontrunc();
 void warmup();
 void reconstruct();
 void LtoR(const int &beg, const int &end, const bool &initial,const bool &continu);
-void RtoL(const int &beg, const int &end, const bool &initial);
+void RtoL(const int &beg, const int &end, const bool &initial,const bool &continu);
 void savewave();
 void readwave();
 void flipwave();

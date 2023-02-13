@@ -115,7 +115,7 @@ void reconstruct() {
 		sys.optodisk(file+"sysbl"+to_string(i+1));
         // std::cout << sys.Ham << std::endl;
     }
-    for (int i=truncpoint; i<ltot-beginid-2; ++i) {
+    for (int i=truncpoint; i<ltot-beginid-1; ++i) {
         Hamilton env(file+"envbl"+to_string(i));
         vector<repmap> envbasis=jmap(site.Ham,env.Ham);
         maptodisk(envbasis, file+"envmap"+to_string(i+1));
@@ -174,7 +174,24 @@ void LtoR(const int &beg, const int &end, const bool &initial, const bool &conti
     Hamilton env;
     reducematrix systrun;
     if (continu) systrun.fromdisk(file+"systrun"+to_string(beg-1), 'n', 0);
-    for (int i=beg-1; i<end; ++i) {    //i=4
+    for (int i=beg-1; i<end; ++i) {
+        ifstream in(file+"runflag", ios::in);
+        int myflag;
+        in >> myflag ;
+        in.close();
+        if (myflag != 1) {
+            ofstream out("stopinfo", ios::out | ios::trunc);
+            out << "stop during LtoR, stopid = " << i << ", set continueflag to 1 and beginid to " << i << " for the next iteration." << endl;
+            out.close();
+            out.open("out/energy.dat", ios::out | ios::app);
+            out << endl;
+            out.close();
+            systrun.todisk(file+"systrun"+to_string(i), 'n');
+            sys.optodisk(file+"sysbl"+to_string(i));
+            savewave();
+            exit(1);
+        }
+
         auto start = high_resolution_clock::now();
         cout << "syslen=" << i+1 << endl;
         string name="out/energy.dat";
@@ -331,7 +348,7 @@ void readsyshelp(HamiltonCPU &tot, const int &site) {
 }
 
 //                   =10-tp-1          =tp+1
-void RtoL(const int &beg, const int &end, const bool &initial) {
+void RtoL(const int &beg, const int &end, const bool &initial, const bool &continu) {
     time_1=0;time_2=0;time_3=0;time_4=0;
     cudaStream_t stream[2];
     for (size_t j = 0; j < 2; j++) {
@@ -341,10 +358,29 @@ void RtoL(const int &beg, const int &end, const bool &initial) {
     HamiltonCPU sys_pre(file+"sysbl"+to_string(beg-1));
     Hamilton sys;
     reducematrix envtrun;
+
+    if (continu) envtrun.fromdisk(file+"envtrun"+to_string(ltot-beg-1), 'n', 0);
+
     string m_name="out/n.dat";
     ofstream mout(m_name.c_str(), ios::out | ios::app);
     mout << scientific;
     for (int i=ltot-beg-1; i<ltot-end; ++i) {    //i=tp
+        ifstream in(file+"runflag", ios::in);
+        int myflag;
+	    in >> myflag ;
+        in.close();
+        if (myflag != 1) {
+            ofstream out("stopinfo", ios::out | ios::trunc);
+            out << "stop during RtoL, stopid = " << ltot-i << ", set continueflag to 2 and beginid to " << ltot-i-1 << " for the next iteration." << endl;
+            out.close();
+            out.open("out/energy.dat", ios::out | ios::app);
+            out << endl;
+            out.close();
+            envtrun.todisk(file+"envtrun"+to_string(i), 'n');
+            env.optodisk(file+"envbl"+to_string(i));
+            savewave();
+            exit(1);
+        }
         auto start = high_resolution_clock::now();
         cout << "syslen=" << ltot-i-1 << endl;
         string name="out/energy.dat";
@@ -375,7 +411,7 @@ void RtoL(const int &beg, const int &end, const bool &initial) {
         vector<repmap> sysbasis, envbasis;
         envbasis=jmap(site.Ham,env.Ham);
         
-        if (i==ltot-beg-1) {
+        if (i==ltot-beg-1 && !continu) {
             sysbasis=jmap(sys.Ham,site.Ham);
             if (initial) {
                 wave myw;

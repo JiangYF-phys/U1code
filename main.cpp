@@ -26,21 +26,27 @@ int main() {
         iter_control(lastsweep);
         warmup();
         LtoR( middleid, ltot-truncpoint-1, true, false);
-        RtoL( ltot-truncpoint-1, truncpoint+1, true);
+        RtoL( ltot-truncpoint-1, truncpoint+1, true, false);
         lastsweep=0;
     }
     
     if (continueflag==1 || continueflag==2) {
         nontrunc();
-        if (constructflag==1) reconstruct();
+        reconstruct();
         readwave();
         
-        if (continueflag == 2) flipwave();
+        // if (continueflag == 3) flipwave();
 
         if (lastsweep<=sweep) {
             iter_control(lastsweep);
-            LtoR( beginid+1, ltot-sweepend-1, false, true);
-            RtoL( ltot-sweepend-1, sweepend+1, false);
+            if (continueflag==1) {
+                LtoR( beginid+1, ltot-sweepend-1, false, true);
+                RtoL( ltot-sweepend-1, sweepend+1, false, false);
+            }
+
+            if (continueflag==2) {
+                RtoL( beginid, sweepend+1, false, true);
+            }
         } else if (beginid < stopid) {
             iter_control(lastsweep);
             LtoR( beginid+1, stopid, false, true);
@@ -62,7 +68,7 @@ int main() {
         }
         iter_control(i);
         LtoR( sweepend+1, ltot-sweepend-1, false, false);
-        RtoL( ltot-sweepend-1, sweepend+1, false);
+        RtoL( ltot-sweepend-1, sweepend+1, false, false);
     }
     
     if (lastsweep<=sweep) {
@@ -82,7 +88,10 @@ int main() {
         out.close();
     }
     savewave();
-
+    out.open("stopinfo", ios::out | ios::trunc);
+    if (out.is_open()) {
+        out << "stop as expected" << endl;
+    }
     auto stop=high_resolution_clock::now();
     auto duration = duration_cast<seconds>(stop - start);
     cout << endl << "total time=" << duration.count() << "s" << endl;
@@ -150,6 +159,11 @@ void readpara() {
 	}
     train_site.clear();
     for (int i = 0; i < ltot+1; i++) { train_site.push_back(define_site(train[i]) );}
+
+    out.open(file+"runflag", ios::out | ios::trunc);
+    int i=1;
+    out << i << endl;
+    out.close();
 }
 
 void measure() {
