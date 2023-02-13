@@ -49,10 +49,14 @@ int main() {
             }
         } else if (beginid < stopid) {
             iter_control(lastsweep);
-            LtoR( beginid+1, stopid, false, true);
+            if (continueflag==1) {
+                LtoR( beginid+1, stopid, false, true);
+            }
             return 0;
         } else if (beginid > stopid) {
-            cout << "check begin and stop id." << endl;
+            if (continueflag==2) {
+                RtoL( beginid, stopid+1, false, true);
+            }
             return 0;
         }
     }
