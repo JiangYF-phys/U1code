@@ -28,6 +28,7 @@ public:
     void mul(const reducematrix &block1, const reducematrixCPU &block2, const wave &myw, const reducematrixCPU &block3, const reducematrix &block4, const double &para, const char flag[4], const vector<repmap> &mapl, const vector<repmap> &mapr, cudaStream_t stream);
     void transLtoR(const wave &myw, const reducematrix &systrun, const reducematrix &envtrun, const vector<repmap> sysmap, const vector<repmap> envmap);
     void transRtoL(const wave &myw, const reducematrix &systrun, const reducematrix &envtrun, const vector<repmap> sysmap, const vector<repmap> envmap);
+    reducematrix wavemul(const wave &block1, char flag1, char flag2, cudaStream_t stream) const;
     void flipsyssite(const vector<repmap> &sys_map, const wave &myw);
     
 //lagacy

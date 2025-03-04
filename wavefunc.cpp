@@ -223,6 +223,32 @@ void wave::mul(const reducematrix &block1, const reducematrixCPU &block2, const 
     }
 }
 
+reducematrix wave::wavemul(const wave &block1, char flag1, char flag2, cudaStream_t stream) const {
+    reducematrix mulm(0, 1);
+    for (size_t i=0; i<this->size(); ++i) {
+        if ( checktime(this->get(i),block1.get(i),flag1,flag2) ) {
+            
+            int loc;
+            if (flag1=='n') {
+                loc=mulm.search(this->getjl(i), block1.getjl(i), this->getnl(i), block1.getnl(i));
+            } else {
+                loc=mulm.search(this->getjr(i), block1.getjr(i), this->getnr(i), block1.getnr(i));
+            }
+            if (loc==-1) {
+                mblock tmp;
+                tmp.mult(1,this->get(i), block1.get(i), flag1, flag2);
+                mulm.add(tmp);
+            } else {
+                // *mulm.mat[loc] += *mat[i] * *block1.mat[i];
+                mulm.addsubblock(loc,0,0,block1.getsl(i),block1.getsr(i),multwithrank(1, this->get(i), block1.get(i), flag1, flag2), stream);
+            }
+            
+        }
+    }
+    return mulm;
+}
+
+
 void mul_CtoG(const reducematrix &block1, const reducematrixCPU &block2, const wave_CPU &myw, wave &waveG, const reducematrixCPU &block3, const reducematrix &block4, const double &para, const char flag[4], const vector<repmap> &sys_map, const vector<repmap> &env_map, cudaStream_t stream) {
     vector<mul_store> sys_store, env_store;
     sys_store=sysmulhelper(block1, block2, flag[0], flag[1], sys_map);
@@ -390,7 +416,7 @@ void wave::transLtoR(const wave &myw, const reducematrix &systrun, const reducem
                             if ( checktime(newtmp, envtrun.get(k),'n','t') && i1>=0) {
                                 int loc=this->search(newtmp.jleft, newtmp.jright, newtmp.nleft, newtmp.nright);
                                 if (loc>=0) {
-                                    this->addsubblock(loc, sysmap[i1].bgn, 0, sysmap[i1].len, envtrun.getsl(k), newtmp*mconj(envtrun.get(k),1.0));
+                                    this->addsubblock(loc, sysmap[i1].bgn, 0, sysmap[i1].len, envtrun.getsl(k), newtmp*mconj(envtrun.get(k),1.0),0);
                                 }
                             }
                         }
@@ -417,7 +443,7 @@ void wave::transRtoL(const wave &myw, const reducematrix &systrun, const reducem
                             if ( checktime(systrun.get(k), newtmp,'n','n') && i1>=0) {
                                 int loc=this->search(newtmp.jleft, newtmp.jright, newtmp.nleft, newtmp.nright);
                                 if (loc>=0) {
-                                    this->addsubblock(loc, 0, envmap[i1].bgn, systrun.getsl(k), envmap[i1].len,  systrun.get(k)*newtmp );
+                                    this->addsubblock(loc, 0, envmap[i1].bgn, systrun.getsl(k), envmap[i1].len,  systrun.get(k)*newtmp, 0);
                                 }
                             }
                         }

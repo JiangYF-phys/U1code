@@ -140,7 +140,8 @@ void lanc_main_new(const Hamilton &sys, wave &lastwave, const Hamilton &env, con
                 }
                 LAPACKE_dstev (LAPACK_COL_MAJOR, 'V', inner, diag, ndiag, dwork, inner);
                 err=energy-diag[0];
-                cout << ", err=" << err;
+                cout << ", err=" << err << ", E_0=" << diag[0] << ", E_1=" << diag[1];
+                if (inner>2) cout << ", E_2=" << diag[2];
                 energy=diag[0];
                 delete [] diag; diag=NULL;
                 delete [] ndiag; ndiag=NULL;
@@ -216,7 +217,155 @@ void lanc_main_new(const Hamilton &sys, wave &lastwave, const Hamilton &env, con
     string name="out/energy.dat";
     ofstream out(name.c_str(), ios::out | ios::app);
     if (out.is_open()) {
-        out << scientific << "Energy=" << energy << ", iter=" << icount << ", lan_err="<< err << ", lanc time=" << duration.count() << "ms" << endl;
+        out << scientific << "Energy=" << energy+en_ph << ", iter=" << icount << ", lan_err="<< err << ", lanc time=" << duration.count() << "ms" << endl;
+        out.close();
+    }
+}
+
+
+void lanc_main_multi_wave(const Hamilton &sys, wave &lastwave, wave &excited_state, const Hamilton &env, const vector<repmap> &sys_basis, const vector<repmap> &env_basis) {
+    auto start = high_resolution_clock::now();
+    cudaStream_t stream[2];
+    for (size_t j = 0; j < 2; j++) {
+        cudaStreamCreate(&stream[j]);
+    }
+    
+    int time2=0;
+    cublasSetStream(GlobalHandle, stream[0]);
+    // wave_CPU* wave_store = new wave_CPU[Lan_max_inner+1]();
+    vector<double> alpha, beta;
+    vector<double> vec1, vec2;
+    wave myv[2];
+    myv[0]=lastwave;
+    double err=1.0, energy=1000.0;
+    double err_1st=1.0, energy_1st=1000.0;
+    int icount=0;
+    double Hmem=max(sys.mem_size(),env.mem_size());
+    cout << endl;
+    cout << "sysmem= " << sys.mem_size()/1024 << "GB, envmem= " << env.mem_size()/1024 << "GB, 3*wavmem= " << 3*lastwave.mem_size()/1024 << "GB" << endl;
+    
+
+    // be careful about Lan_max 
+    alpha.clear(); beta.clear();
+    beta.push_back(0); alpha.push_back(0);//skip [0]
+    beta.push_back(0);// set b[1]
+    myv[0].setzero(stream[0]);
+    myv[1].set(lastwave,stream[0]);
+    double memsize=0;
+    int upperbound=100;
+    int inner=1;
+    cout << "inner iter: ";
+    wave_CPU* wave_store = new wave_CPU[Lan_max_inner*Lan_max_outter+1]();
+    while ( inner<4 || (inner < min(upperbound, Lan_max_inner*Lan_max_outter) && (err>lan_error || err_1st>lan_error)) ) {
+        cout << inner;
+    
+        auto start2 = high_resolution_clock::now();
+        thread th0(store_help, ref(myv[inner%2]), ref(wave_store[inner-1])); // value of reference wave is not important 
+        auto stop2 = high_resolution_clock::now();
+        auto duration2 = duration_cast<milliseconds>(stop2 - start2);
+        time2+=duration2.count();
+        Htowave(sys, myv[inner%2], lastwave, env, sys_basis, env_basis, stream[0]);
+        alpha.push_back( lastwave.dot(myv[inner%2]) ); // a(i)
+        // std::cout << alpha[inner] << std::endl;
+        if (inner>1) {
+            double* diag = new double[inner]();
+            double* ndiag= new double[inner]();
+            double* dwork= new double[inner*inner]();
+            for (size_t j = 1; j < inner+1; ++j) {
+                diag[j-1]=alpha[j];
+            }
+            for (size_t j = 2; j < inner+1; ++j) {
+                ndiag[j-2]=beta[j];
+            }
+            LAPACKE_dstev (LAPACK_COL_MAJOR, 'V', inner, diag, ndiag, dwork, inner);
+            err=energy-diag[0];
+            err_1st=energy_1st-diag[1];
+            cout << ", err=" << err << ", err_1st=" << err_1st << ", E_0=" << diag[0] << ", E_1=" << diag[1];
+            energy=diag[0];
+            energy_1st=diag[1];
+            delete [] diag; diag=NULL;
+            delete [] ndiag; ndiag=NULL;
+            vec1.clear(); vec2.clear();
+            for (size_t j = 0; j < inner; ++j) {
+                vec1.push_back(dwork[ j ]);//*(alpha.size()-1) ]);
+                vec2.push_back(dwork[ j + inner ]);
+            }
+            delete [] dwork; dwork=NULL;
+        }
+        cout << "; " << endl;
+        th0.join();
+        if (inner==1) {upperbound=int((60000-Hmem)/wave_store[0].mem_size());}
+        wave_store[inner-1].copy(myv[inner%2], stream[1]);
+        memsize+=wave_store[inner-1].mem_size();
+
+        lastwave.mul_add(-alpha[inner], myv[inner%2], stream[0]);
+        lastwave.mul_add(-beta[inner], myv[(inner-1)%2], stream[0]);
+
+        double nor;
+        nor=lastwave.normalize(stream[0]);
+        beta.push_back(nor);
+        myv[(inner+1)%2].set(lastwave,stream[0]);
+        inner++;
+        icount++;
+    }
+    
+    cout << "check orthogonal:";
+    for (size_t i=1; i<inner-1; ++i) {
+        cout << "  " << wave_store[0].dot(wave_store[i]);
+    }
+    cout << endl;
+
+    cout << "check vector:  ";
+
+    wave_CPU wav_tot;
+    wav_tot.construct(lastwave);
+    wav_tot.setzero();
+    for (size_t i=0; i<inner-1; ++i) {
+        wav_tot.mul_add(vec1[i], wave_store[i]);
+        cout << "  " << vec1[i];
+    }
+    cout << endl;
+    wav_tot.toGPU(lastwave, stream[0]);
+
+    wav_tot.setzero();
+    for (size_t i=0; i<inner-1; ++i) {
+        wav_tot.mul_add(vec2[i], wave_store[i]);
+    }
+    wav_tot.toGPU(excited_state, stream[0]);
+    
+    double nor;
+    lastwave.normalize(stream[0]);
+    nor=excited_state.normalize(stream[0]);
+
+    cout << "memCPU = " << memsize/1024 <<  "GB, wave_norm = " << nor << endl;
+
+    vector<thread> th;
+    for (size_t i = 0; i<inner-1; i++) {
+        th.push_back(thread(clear_help, ref(wave_store[i])));
+    }
+    for (size_t i = 0; i < 2; i++) {
+        myv[i].clear();
+    }
+    for(auto &t : th){
+        t.join();
+    }
+    delete [] wave_store; wave_store=NULL;
+    cout << "GPUmem="<< GPU_memory_used_by_process() << "GB" << endl;
+    
+    
+    cublasSetStream(GlobalHandle, 0);
+    for (size_t i = 0; i < 2; i++) {
+        cudaStreamDestroy(stream[i]);
+    }
+
+    auto stop = high_resolution_clock::now();
+    auto duration = duration_cast<milliseconds>(stop - start);
+    time_2+=duration.count()/1000.0;
+    cout << "Energy=" << energy/ltot << ", Energy_1st=" << energy_1st/ltot << ", iter=" << icount << ", lan_err="<< err << ", lanc time=" << duration.count() << "ms" << endl;
+    string name="out/energy.dat";
+    ofstream out(name.c_str(), ios::out | ios::app);
+    if (out.is_open()) {
+        out << scientific << "Energy=" << energy << ", Energy_1st=" << energy_1st << ", iter=" << icount << ", lan_err="<< err << ", lanc time=" << duration.count() << "ms" << endl;
         out.close();
     }
 }

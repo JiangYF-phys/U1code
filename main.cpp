@@ -5,9 +5,9 @@
 using namespace std;
 using namespace chrono;
 
-using namespace spinless;
-using namespace spinless::armchairlatt;
-using namespace armchair;
+using namespace Hubbard;
+using namespace Hubbard::diagsquarelatt;
+using namespace diagsquare;
 
 void readpara();
 void measure();
@@ -19,9 +19,11 @@ int main() {
     cusolverDnCreate(&GlobalDnHandle);
     cudaEventCreate(&cstart);
     cudaEventCreate(&cstop);
+    // cout << "workspacelimit = " << getAvailableMemory()/1024.0 << " GB" << endl;
+
     readpara();
     auto start=high_resolution_clock::now();
-    
+
     if (continueflag==0) {
         iter_control(lastsweep);
         warmup();
@@ -32,7 +34,7 @@ int main() {
     
     if (continueflag==1 || continueflag==2) {
         nontrunc();
-        reconstruct();
+        if (constructflag==1) reconstruct();
         readwave();
         
         // if (continueflag == 3) flipwave();
@@ -129,14 +131,12 @@ void readpara() {
 	readhelp(in, out); readother(in, out);
 	out.close(); in.close();
 
-	s_z = define_sz();
-    s_p = define_sp(); 
-	fc_u = define_fc_u(); 
-    fc_d = define_fc_d();
-	fc_u_d = fc_u.conj(0); 
-    fc_d_d = fc_d.conj(0); 
-	fn = define_fn();
+    en_ph=0;
+    
+    define_ops();
+
 	site = define_site(0.0);
+
     fn.toCPU(fn_CPU, 0);
     s_z.toCPU(sz_CPU, 0);
     site.toCPU(siteCPU);
@@ -151,15 +151,14 @@ void readpara() {
 	train.clear();
 	for (int i = 0; i < ltot+1; i++) { train.push_back(0);}
 	if (trainflag == 1) {
-        // for (int j = 0; j < ly; j++) {
-        //     train[tolat(0, j)+1]=V_1*ntot/ltot;
-        //     train[tolat(lx-1, j)+1]=V_1*ntot/ltot;
-        // }
-        for (int i = 0; i < lx/3; i++) {
-            for (int j = 0; j < ly; j++) {
-                train[tolat(3*i+1, j)+1]= - 0.5;
-            }
+        for (int j = 0; j < lx; j++) {
+            train[tolat(j, 0)+1]=-0.01 * pow(-1,j);
         }
+        // for (int i = 0; i < lx; i++) {
+        //     for (int j = 0; j < ly; j++) {
+        //         train[tolat(i, j)+1]= - 0.5*(cos(i*2*3.141592/6+j*2*3.141592/3) + cos(i*2*3.141592/6-j*2*3.141592/3));
+        //     }
+        // }
 	}
     train_site.clear();
     for (int i = 0; i < ltot+1; i++) { train_site.push_back(define_site(train[i]) );}
@@ -182,12 +181,14 @@ void measure() {
 	// 	env_trun[i].fromdisk(file + "envtrun" + to_string(i), 'n');
 	// }
 
-    twopoint=settwopoint(int(ly/2.0));
+    int ref_y=0;
+
+    twopoint=settwopoint(ref_y);
 
     ofstream out;
     string name="out/energy.dat";
     out.open(name.c_str(),ios::app);
-    fourpoint=setfourpoint(int(ly/2.0), out);
+    fourpoint=setfourpoint(ref_y, out);
     out.close();
     
     cudaStream_t stream[2];

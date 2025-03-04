@@ -15,11 +15,31 @@ vector<size_t> sort_indexes(const vector<T> &v) {
 reducematrix wavetorou(const wave &myw, char side, cudaStream_t stream) {    
     // cout << side << endl;
     if (side=='s') {
-        return myw.reducematrix::wavemul(myw, 'n', 't', stream);
+        return myw.wavemul(myw, 'n', 't', stream);
     } else {
         assert(side=='e');
-        return myw.reducematrix::wavemul(myw, 't', 'n', stream);
+        return myw.wavemul(myw, 't', 'n', stream);
     }
+}
+
+reducematrix multiwavetorou(const wave &myw1, const wave &myw2, char side, cudaStream_t stream) {    
+    double alpha=0.5;
+    reducematrix tmp(0, 1);
+    if (side=='s') {
+        tmp=myw1.wavemul(myw1, 'n', 't', stream);
+        tmp.num_mul(alpha,stream);
+        reducematrix tmp2(0, 1);
+        tmp2.set(myw2.wavemul(myw2, 'n', 't', stream),stream);
+        tmp.mul_add(1-alpha,tmp2,stream);
+    } else {
+        assert(side=='e');
+        tmp.set(myw1.wavemul(myw1, 't', 'n', stream),stream);
+        tmp.num_mul(alpha,stream);
+        reducematrix tmp2(0, 1);
+        tmp2.set(myw2.wavemul(myw2, 't', 'n', stream),stream);
+        tmp.mul_add(1-alpha,tmp2,stream);
+    }
+    return tmp;
 }
 
 vector<int> keephelp(const vector<vector<double> > &val, int num) {

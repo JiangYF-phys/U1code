@@ -29,6 +29,16 @@ namespace Hubbard {
     void measurehelp(cudaStream_t stream[2]);
 }
 
+namespace Hubbard_bond {
+    void measurehelp(cudaStream_t stream[2]);
+    void measurebond(const reducematrix &op1, const reducematrix &op2, const double &para, const string &name, cudaStream_t stream[2]);
+}
+
+namespace tUJmodel {
+    void measurehelp(cudaStream_t stream[2]);
+}
+
+
 namespace tJmodel {
     void measurehelp(cudaStream_t stream[2]);
 }

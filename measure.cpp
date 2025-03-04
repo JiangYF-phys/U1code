@@ -1,5 +1,8 @@
 #include "measure.hpp"
 
+double singlesite(const reducematrix &myop, const int &siteid, cudaStream_t stream[2]);
+double twosite(const reducematrix &op1, const reducematrix &op2, const int &opid1, const int &opid2, cudaStream_t stream[2]);
+
 // will be replaced by op_list soon
 namespace spinless {
     void measurehelp(cudaStream_t stream[2]) {
@@ -26,8 +29,9 @@ namespace Hubbard {
         // measuresite(s_z, "out/Sz.dat", stream);
 
         // measurecorr_quick(s_z, s_z, 1.0, "out/SzCor.dat", stream);
-        // measurecorr_quick(fc_u_d, fc_u, 1.0, "out/fcupCor.dat", stream);
         // measurecorr_quick(fn, fn, 1.0, "out/fnCor.dat", stream);
+        measuresccor_quick("out/FourSC.dat", stream);// to be developed
+        // measurecorr_quick(fc_u_d, fc_u, 1.0, "out/fcupCor.dat", stream);
 
         int o_size=3;
         reducematrix* opl1=new reducematrix[o_size] ();
@@ -40,7 +44,69 @@ namespace Hubbard {
         }
         delete [] opl1; delete [] opl2;
 
+    }
+}
+
+namespace Hubbard_bond {
+    void measurehelp(cudaStream_t stream[2]) {
+        // measuresite(fn, "out/n.dat", stream);
+        // measuresite(s_z, "out/Sz.dat", stream);
+
+        // measurecorr_quick(s_z, s_z, 1.0, "out/SzCor.dat", stream);
+        // measurecorr_quick(fn, fn, 1.0, "out/fnCor.dat", stream);
+        // measuresccor_quick("out/FourSC.dat", stream);// to be developed
+        // measurecorr_quick(fc_u_d, fc_u, 1.0, "out/fcupCor.dat", stream);
+
+        measurebond(fc_u_d, fc_u, 1.0, "out/bonds.dat", stream);
+
+        int o_size=3;
+        reducematrix* opl1=new reducematrix[o_size] ();
+        reducematrix* opl2=new reducematrix[o_size] ();
+        opl1[0]=s_z; opl1[1]=fc_u_d; opl1[2]=fn;
+        opl2[0]=s_z; opl2[1]=fc_u; opl2[2]=fn;
+        measurecorr_quick_list(opl1, opl2, o_size, 1.0, "out/Cor_Sz_fc_fn.dat", stream);
+        for (int i_o = 0; i_o < o_size; i_o++) {
+            opl1[i_o].clear(); opl2[i_o].clear();
+        }
+        delete [] opl1; delete [] opl2;
+    }
+
+    void measurebond(const reducematrix &op1, const reducematrix &op2, const double &para, const string &name, cudaStream_t stream[2]) {
+        ofstream out(name.c_str(), ios::out | ios::trunc);
+        if (out.is_open()) {
+            out << scientific;
+            double myval;
+            for (int i = 0; i < allbonds.size(); ++i) {
+                myval=twosite(op1,op2,allbonds[i].l1+1,allbonds[i].l2+1, stream);
+                out << allbonds[i].l1+1 << " " << allbonds[i].l2+1 << " " << para*myval << endl;
+            }
+            out << endl;
+            out.close();
+        }   
+    }
+}
+
+namespace tUJmodel {
+    void measurehelp(cudaStream_t stream[2]) {
+        // measuresite(fn, "out/n.dat", stream);
+        // measuresite(s_z, "out/Sz.dat", stream);
+
+        // measurecorr_quick(s_z, s_z, 1.0, "out/SzCor.dat", stream);
+        // measurecorr_quick(fn, fn, 1.0, "out/fnCor.dat", stream);
         measuresccor_quick("out/FourSC.dat", stream);// to be developed
+        // measurecorr_quick(fc_u_d, fc_u, 1.0, "out/fcupCor.dat", stream);
+
+        int o_size=3;
+        reducematrix* opl1=new reducematrix[o_size] ();
+        reducematrix* opl2=new reducematrix[o_size] ();
+        opl1[0]=s_z; opl1[1]=fc_u_d; opl1[2]=fpair;
+        opl2[0]=s_z; opl2[1]=fc_u; opl2[2]=fpair.conj(0);
+        measurecorr_quick_list(opl1, opl2, o_size, 1.0, "out/Cor_Sz_fc_fpair.dat", stream);
+        for (int i_o = 0; i_o < o_size; i_o++) {
+            opl1[i_o].clear(); opl2[i_o].clear();
+        }
+        delete [] opl1; delete [] opl2;
+
     }
 }
 
@@ -72,9 +138,6 @@ namespace Heisenberg {
         measurecorr_quick(s_z, s_z, 1.0, "out/SzCor.dat", stream);
     }
 }
-
-double singlesite(const reducematrix &myop, const int &siteid, cudaStream_t stream[2]);
-double twosite(const reducematrix &op1, const reducematrix &op2, const int &opid1, const int &opid2, cudaStream_t stream[2]);
 
 void measuresite(const reducematrix &op, const string &name, cudaStream_t stream[2]) {
     ofstream out(name.c_str(), ios::out | ios::app);
@@ -362,6 +425,7 @@ void measurecorr_quick_list(reducematrix* op1, reducematrix* op2, const int o_si
                     delete [] myop;
                 }
             }
+            delete [] myop1;
         } else {
             out << "error: lastsite " << twopoint[twopoint.size()-1] << " is larger than stopid " << stopid << endl;
         }
@@ -565,7 +629,7 @@ double sc_helper(const reducematrix &op1, const reducematrix &op2, const reducem
         }
     }
     
-//-------------------------------------------------------------
+    //-------------------------------------------------------------
     if (tmpid[3]<=stopid) {
         return mycoef*sc_helper_4_0(myop, myopid, stream);
     }
@@ -602,7 +666,7 @@ void measuresccor_quick(const string &name, cudaStream_t stream[2]) {
         out << scientific;
         out << "ltot = " << ltot << endl;
         for (int n = 0; n < fourpoint.size(); ++n) {
-            out << "ref=" << fourpoint[n][0].l1 << ", " << fourpoint[n][0].l2 << endl;
+            out << "ref=" << fourpoint[n][0].l1 << ", " << fourpoint[n][0].l2 << "; " << fourpoint[n][1].l1 << ", " << fourpoint[n][1].l2 << endl;
 
             if (fourpoint[n][0].l1 < fourpoint[n][0].l2) {
                 reducematrix myop, myop_tmp;

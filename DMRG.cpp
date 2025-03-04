@@ -213,7 +213,7 @@ void LtoR(const int &beg, const int &end, const bool &initial, const bool &conti
         int site_e=0;
         if (i<end-1) {
             site_e=ltot-i-1-2;
-            // improve: allocate than read, parallel read
+            // improve: allocate then read, parallel read
             env_pre.fromdisk(file+"envbl"+to_string(site_e));
         }
         // thread th0(readenvhelp, ref(env_pre), ref(site_e) );
@@ -257,9 +257,12 @@ void LtoR(const int &beg, const int &end, const bool &initial, const bool &conti
         cout << endl << "CPUmem_0="<< physical_memory_used_by_process() << "GB";
 
         wave_CPU wave_store[2];
-
+        wave excited;
         if (lanczos_ver==1) {
             lanc_main_new(sys, ground, env, sysbasis, envbasis);
+            wave_store[0].construct(ground);
+        } else if (lanczos_ver==2) {
+            lanc_main_multi_wave(sys,ground,excited,env,sysbasis,envbasis);
             wave_store[0].construct(ground);
         } else if (lanczos_ver==3) {
             for (size_t j = 0; j < 2; j++) {wave_store[j].construct(ground);}
@@ -278,7 +281,13 @@ void LtoR(const int &beg, const int &end, const bool &initial, const bool &conti
         wave_store[0].copy(ground, stream[1]);
         start = high_resolution_clock::now();
         reducematrix rou;
-        rou.set(wavetorou(ground, 's', stream[0]),stream[0]);
+        if (lanczos_ver==2) {
+            rou=multiwavetorou(ground, excited, 's', stream[0]);
+            ground.mul_add(1.0,excited,stream[0]);
+            ground.normalize(stream[0]);
+        } else {
+            rou.set(wavetorou(ground, 's', stream[0]),stream[0]);
+        }
         cout << "GPUmem_1="<< GPU_memory_used_by_process() << "GB" << endl;
         th1.join();
         cublasSetStream(GlobalHandle, 0);
@@ -286,7 +295,7 @@ void LtoR(const int &beg, const int &end, const bool &initial, const bool &conti
 
         rou.clear();
         cudaDeviceSynchronize();
-        ground.clear();                                                                                                                                                                                                                              
+        ground.clear();
         cout << endl << "sysmem=" << sys.mem_size()/1024 << "GB, systrunmem=" << systrun.mem_size()/1024 << "GB ";
         
         stop = high_resolution_clock::now();
@@ -440,15 +449,14 @@ void RtoL(const int &beg, const int &end, const bool &initial, const bool &conti
         ground.normalize(0);
         cublasSetStream(GlobalHandle, stream[0]);
         wave_CPU wave_store[2];
-
+        wave excited;
         if (lanczos_ver==1) {
             lanc_main_new(sys, ground, env, sysbasis, envbasis);
             wave_store[0].construct(ground);
+        } else if (lanczos_ver==2) {
+            lanc_main_multi_wave(sys,ground,excited,env,sysbasis,envbasis);
+            wave_store[0].construct(ground);
         } else if (lanczos_ver==3) {
-            // wave myw;
-            // myw=ground;
-            // lanc_main_new(sys, myw, env, sysbasis, envbasis);
-
             for (size_t j = 0; j < 2; j++) {wave_store[j].construct(ground);}
             lanc_main_V3(sys, ground, env, sysbasis, envbasis, wave_store, stream);
             wave_store[1].clear();
@@ -482,7 +490,14 @@ void RtoL(const int &beg, const int &end, const bool &initial, const bool &conti
         start = high_resolution_clock::now();
         
         reducematrix rou;
-        rou.set(wavetorou(ground, 'e', stream[0]),stream[0]);
+        if (lanczos_ver==2) {
+            rou.set(multiwavetorou(ground, excited, 'e', stream[0]),stream[0]);
+            ground.mul_add(1.0,excited,stream[0]);
+            ground.normalize(stream[0]);
+        } else {
+            rou.set(wavetorou(ground, 'e', stream[0]),stream[0]);
+        }
+
         th1.join();
         cublasSetStream(GlobalHandle, 0);
         envtrun=routotrunc(rou, i+1==lx*ly/2);

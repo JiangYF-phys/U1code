@@ -8,6 +8,7 @@ template <typename T>
 vector<size_t> sort_indexes(const vector<T> &v);
 
 reducematrix wavetorou(const wave &myw, char side, cudaStream_t stream);
+reducematrix multiwavetorou(const wave &myw1, const wave &myw2, char side, cudaStream_t stream);
 reducematrix routotrunc(const reducematrix &rou, bool spectrumflag);
 
 #endif /* truncation_hpp */

@@ -162,10 +162,10 @@ void reducematrix::mul_add(const double& alpha, const reducematrix& block1, cuda
     }
 }
 
-void reducematrix::addsubblock(int loc, int bgn1, int bgn2,int len1, int len2, const mblock& part) {
+void reducematrix::addsubblock(int loc, int bgn1, int bgn2,int len1, int len2, const mblock& part, cudaStream_t stream) {
     dim3 block(32, 32);
     dim3 grid((len1-1)/block.x+1, (len2-1)/block.y+1);
-    matAdd<<<grid,block>>>(1.0, mat[loc]->mat, mat[loc]->sleft, bgn1+bgn2*mat[loc]->sleft, part.mat, len1, 0, len1, len2);
+    matAdd<<<grid,block,0,stream>>>(1.0, mat[loc]->mat, mat[loc]->sleft, bgn1+bgn2*mat[loc]->sleft, part.mat, len1, 0, len1, len2);
     // cudaDeviceSynchronize();
 }
 
@@ -360,30 +360,6 @@ void reducematrix::fromdisk(const string& filename, const char& flag, cudaStream
 	ifstream in(filename.c_str(), ios::in | ios::binary);
 	fromdisk(in, flag, stream);
 	in.close();
-}
-
-reducematrix reducematrix::wavemul(const reducematrix &block1, char flag1, char flag2, cudaStream_t stream) const {
-    reducematrix mulm(0, 1);
-    for (size_t i=0; i<mat.size(); ++i) {
-        if ( checktime(*mat[i],*block1.mat[i],flag1,flag2) ) {
-            
-            int loc;
-            if (flag1=='n') {
-                loc=mulm.search(mat[i]->jleft, block1.mat[i]->jleft, mat[i]->nleft, block1.mat[i]->nleft);
-            } else {
-                loc=mulm.search(mat[i]->jright, block1.mat[i]->jright, mat[i]->nright, block1.mat[i]->nright);
-            }
-            if (loc==-1) {
-                mulm.mat.push_back(new mblock());
-                mulm.mat.back()->mult(1,*mat[i], *block1.mat[i], flag1, flag2);
-            } else {
-                // *mulm.mat[loc] += *mat[i] * *block1.mat[i];
-                mulm.mat[loc]->addto(multwithrank(1, *mat[i], *block1.mat[i], flag1, flag2), stream);
-            }
-            
-        }
-    }
-    return mulm;
 }
 
 reducematrix reducematrix::applytrunc(const reducematrix &trunc, cudaStream_t stream) {
