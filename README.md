@@ -5,12 +5,12 @@
 min kept与max kept表示矩阵整体维度，两者取值相同；
 sweep是一个整数，表示希望程序跑到第几轮；
 continue可以取0和1，取0表示开始一轮全新的计算，取1表示从之前的计算结果继续；
-lastsweep是一个整数，在continue取1时告诉程序之前跑到了第几轮， 在continue取0时，没有作用；
+lastsweep是一个整数，在continue取1时告诉程序之前跑到了第几轮， 在continue取0时，没有作用。
 
 首次执行时，continue取0，min kept与max keptk可以取得较小，比如5000，然后sweep取5左右。程序运行完会将波函数和哈密顿量存在temp文件夹中，为了测试方便，最好备份一下temp文件夹。
 然后将out文件夹中的info覆盖执行文件目录下的info，这一步会更新一下lastsweep，info里其他值不变。
 
-之后开始测试，检测运行效率。：
+之后开始测试，检测运行效率：
 将continue取1，min kept与max kept可以取大一点，比如10000，然后sweep增大1，其他不变。执行程序后会读取temp文件夹中的波函数和哈密顿量，然后再跑一个sweep后退出。
 如果备份了之前的temp文件夹的话，测试过程中程序可以随时中断。但是由于程序运行过程中会不断读写temp文件夹，所以测试完之后一次后需要通过备份将temp文件夹恢复，不用额外修改info文件（min kept与max kept可以看情况调整）。
 temp文件夹恢复成首次执行后的状态后就可以再次测试。
